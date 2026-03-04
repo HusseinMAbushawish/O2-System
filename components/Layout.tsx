@@ -161,6 +161,10 @@ export const AppLayout: React.FC<{
           ) : isCallCenter ? (
             <>
               <SidebarItem 
+                icon={ShoppingCart} label="نقطة البيع" 
+                active={activeView === 'call_center_pos'} collapsed={isCollapsed} onClick={() => setActiveView('call_center_pos')} 
+              />
+              <SidebarItem 
                 icon={LayoutDashboard} label="لوحة التحكم" 
                 active={activeView === 'call_center_dashboard'} collapsed={isCollapsed} onClick={() => setActiveView('call_center_dashboard')} 
               />

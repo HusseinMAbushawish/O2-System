@@ -16,6 +16,7 @@ import { DepartmentView } from './components/DepartmentView';
 import { OrderAggregatorDashboard } from './components/OrderAggregatorDashboard';
 import { ShelfGridView } from './components/ShelfGridView';
 import { CallCenterDashboard } from './components/CallCenterDashboard';
+import { CallCenterPOS } from './components/CallCenterPOS';
 
 const Main: React.FC = () => {
   const { currentUser, currentShift, userRole, editingOrderId } = useApp();
@@ -33,7 +34,7 @@ const Main: React.FC = () => {
     } else if (userRole === 'ORDER_AGGREGATOR') {
       setActiveView('aggregator_dashboard');
     } else if (userRole === 'CALL_CENTER_OPERATOR') {
-      setActiveView('call_center_dashboard');
+      setActiveView('call_center_pos');
     } else if (editingOrderId) {
       setActiveView('pos');
     }
@@ -88,6 +89,7 @@ const Main: React.FC = () => {
       case 'departments': return <DepartmentView />;
       case 'aggregator_dashboard': return <OrderAggregatorDashboard />;
       case 'aggregator_shelves': return <ShelfGridView />;
+      case 'call_center_pos': return <CallCenterPOS />;
       case 'call_center_dashboard': return <CallCenterDashboard initialTab="dashboard" />;
       case 'call_center_search': return <CallCenterDashboard initialTab="search" />;
       case 'call_center_delivery': return <CallCenterDashboard initialTab="delivery" />;

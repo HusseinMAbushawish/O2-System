@@ -273,9 +273,29 @@ export interface Customer {
   totalSpending: number;
   loyaltyLevel: 'SILVER' | 'GOLD' | 'PLATINUM';
   favoriteCategory?: string;
+  favoriteItem?: string;
   orderFrequency: number; // orders per month
   lastOrderDate?: Date;
+  lastOrderId?: string;
+  lastDriverName?: string;
+  satisfactionScore: number; // 1-5
   notes?: string;
+  hasOpenComplaint?: boolean;
+}
+
+export interface CallCenterComplaint {
+  id: string;
+  customerPhone: string;
+  customerName: string;
+  orderId?: string;
+  issueType: 'COLD_FOOD' | 'DELAY' | 'WRONG_ITEM' | 'MISSING_ITEM' | 'QUALITY' | 'DRIVER' | 'OTHER';
+  angerLevel: number; // 1-5
+  description: string;
+  proposedSolution: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'ESCALATED';
+  createdAt: Date;
+  resolvedAt?: Date;
+  agentName?: string;
 }
 
 export enum DeliveryTripStatus {

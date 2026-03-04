@@ -5,7 +5,7 @@ import {
   Transaction, SavedCard, Table, Shift, Branch, Department, JobTitle, JobType, Employee,
   TableStatus, FinancialTransaction, FinancialTransactionType,
   CustomerFeedback, StaffTask, TableAssignment,
-  Customer, DeliveryTrip, DeliveryTripStatus, DeliveryEmployee, ProductionIssue
+  Customer, DeliveryTrip, DeliveryTripStatus, DeliveryEmployee, ProductionIssue, CallCenterComplaint
 } from './types';
 import { TABLES } from './constants';
 
@@ -110,6 +110,10 @@ interface AppContextType {
   
   addProductionIssue: (issue: Omit<ProductionIssue, 'id'>) => void;
   updateProductionIssue: (id: string, issue: Partial<ProductionIssue>) => void;
+
+  callCenterComplaints: CallCenterComplaint[];
+  addCallCenterComplaint: (complaint: Omit<CallCenterComplaint, 'id' | 'createdAt' | 'status'>) => void;
+  updateCallCenterComplaint: (id: string, complaint: Partial<CallCenterComplaint>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -224,10 +228,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalOrders: 42,
       totalSpending: 3850,
       loyaltyLevel: 'PLATINUM',
-      favoriteCategory: 'مشاوي',
+      favoriteCategory: 'شاورما',
+      favoriteItem: 'فرشوحة دبل',
       orderFrequency: 8,
       lastOrderDate: new Date(Date.now() - 2 * 24 * 60000),
-      notes: 'عميل VIP، يفضل التوصيل السريع'
+      lastOrderId: 'o-1',
+      lastDriverName: 'أحمد محمود',
+      satisfactionScore: 4.5,
+      notes: 'عميل VIP، يفضل التوصيل السريع',
+      hasOpenComplaint: true
     },
     {
       id: 'cust_2',
@@ -239,10 +248,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalOrders: 18,
       totalSpending: 1250,
       loyaltyLevel: 'GOLD',
-      favoriteCategory: 'معكرونة',
+      favoriteCategory: 'إيطالي',
+      favoriteItem: 'بيتزا مكسيكي دجاج',
       orderFrequency: 4,
       lastOrderDate: new Date(Date.now() - 7 * 24 * 60000),
-      notes: 'تفضل الدفع الكاش'
+      lastDriverName: 'محمد خالد',
+      satisfactionScore: 4.8,
+      notes: 'تفضل الدفع الكاش',
+      hasOpenComplaint: false
+    },
+    {
+      id: 'cust_3',
+      name: 'خالد يوسف',
+      phone: '0599345678',
+      address: 'شارع البحر، غزة',
+      area: 'الشجاعية',
+      registrationDate: new Date(2024, 2, 10),
+      totalOrders: 7,
+      totalSpending: 420,
+      loyaltyLevel: 'SILVER',
+      favoriteCategory: 'وجبات غربية',
+      favoriteItem: 'زينجر',
+      orderFrequency: 2,
+      lastOrderDate: new Date(Date.now() - 14 * 24 * 60000),
+      lastDriverName: 'أحمد محمود',
+      satisfactionScore: 3.2,
+      notes: '',
+      hasOpenComplaint: false
+    }
+  ]);
+
+  const [callCenterComplaints, setCallCenterComplaints] = useState<CallCenterComplaint[]>([
+    {
+      id: 'cc_1',
+      customerPhone: '0599123456',
+      customerName: 'محمود علي',
+      orderId: 'o-1',
+      issueType: 'DELAY',
+      angerLevel: 3,
+      description: 'تأخر الطلب أكثر من 45 دقيقة',
+      proposedSolution: 'خصم 20% على الطلب القادم',
+      status: 'OPEN',
+      createdAt: new Date(Date.now() - 2 * 3600000),
+      agentName: 'موظف الاتصالات'
     }
   ]);
 
@@ -412,12 +460,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProductionIssues(p => p.map(i => i.id === id ? { ...i, ...issue } : i));
   };
 
+  const addCallCenterComplaint = (complaint: Omit<CallCenterComplaint, 'id' | 'createdAt' | 'status'>) => {
+    const newComplaint: CallCenterComplaint = {
+      ...complaint,
+      id: 'cc_' + Math.random().toString(36).substr(2, 5),
+      createdAt: new Date(),
+      status: 'OPEN'
+    };
+    setCallCenterComplaints(p => [newComplaint, ...p]);
+    // Mark customer as having open complaint
+    const cust = customers.find(c => c.phone === complaint.customerPhone);
+    if (cust) {
+      setCustomers(p => p.map(c => c.phone === complaint.customerPhone ? { ...c, hasOpenComplaint: true } : c));
+    }
+  };
+
+  const updateCallCenterComplaint = (id: string, complaint: Partial<CallCenterComplaint>) => {
+    setCallCenterComplaints(p => p.map(c => c.id === id ? { ...c, ...complaint } : c));
+    // If resolving, check if customer has other open complaints
+    if (complaint.status === 'RESOLVED') {
+      const resolved = callCenterComplaints.find(c => c.id === id);
+      if (resolved) {
+        const otherOpen = callCenterComplaints.filter(c => c.id !== id && c.customerPhone === resolved.customerPhone && c.status !== 'RESOLVED');
+        if (otherOpen.length === 0) {
+          setCustomers(p => p.map(c => c.phone === resolved.customerPhone ? { ...c, hasOpenComplaint: false } : c));
+        }
+      }
+    }
+  };
+
   const login = (name: string, role: 'CASHIER' | 'CUSTOMER' | 'WAITER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR' | 'CALL_CENTER_OPERATOR', phone: string = '', branchId: string = 'b1', departmentId?: string) => {
     setUserRole(role);
     setCurrentUser({
       id: 'u_' + Math.random().toString(36).substr(2, 5),
       name, phone, role: (role === 'ADMIN' ? 'CASHIER' : role === 'BRANCH_MANAGER' ? 'BRANCH_MANAGER' : role),
-      branchId: (role === 'BRANCH_MANAGER' || role === 'DEPARTMENT_STAFF' || role === 'ORDER_AGGREGATOR') ? branchId : undefined,
+      branchId: (role === 'BRANCH_MANAGER' || role === 'DEPARTMENT_STAFF' || role === 'ORDER_AGGREGATOR' || role === 'CALL_CENTER_OPERATOR') ? branchId : undefined,
       departmentId: role === 'DEPARTMENT_STAFF' ? departmentId : undefined,
       points: 120, balance: 350.0, tier: 'GOLD', vouchers: [], favorites: ['1', '3'], addresses: [], savedCards: [], transactions: []
     });
@@ -918,7 +995,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addCustomer, updateCustomer, searchCustomerByPhone,
       addDeliveryTrip, updateDeliveryTrip, deleteDeliveryTrip,
       addDeliveryEmployee, updateDeliveryEmployee,
-      addProductionIssue, updateProductionIssue
+      addProductionIssue, updateProductionIssue,
+      callCenterComplaints, addCallCenterComplaint, updateCallCenterComplaint
     }}>
       {children}
     </AppContext.Provider>
