@@ -4,7 +4,8 @@ import {
   Order, OrderType, OrderStatus, MenuItem, OrderItem, User, PaymentMethod, 
   Transaction, SavedCard, Table, Shift, Branch, Department, JobTitle, JobType, Employee,
   TableStatus, FinancialTransaction, FinancialTransactionType,
-  CustomerFeedback, StaffTask, TableAssignment
+  CustomerFeedback, StaffTask, TableAssignment,
+  Customer, DeliveryTrip, DeliveryTripStatus, DeliveryEmployee, ProductionIssue
 } from './types';
 import { TABLES } from './constants';
 
@@ -13,7 +14,7 @@ interface AppContextType {
   currentUser: User | null;
   currentCart: OrderItem[];
   cartOrderType: OrderType;
-  userRole: 'CASHIER' | 'CUSTOMER' | 'WAITER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR' | null;
+  userRole: 'CASHIER' | 'CUSTOMER' | 'WAITER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR' | 'CALL_CENTER_OPERATOR' | null;
   
   branches: Branch[];
   departments: Department[];
@@ -88,6 +89,27 @@ interface AppContextType {
   notifications: { id: string; message: string; time: Date; read: boolean }[];
   addNotification: (message: string) => void;
   markNotificationRead: (id: string) => void;
+
+  // Call Center Data
+  customers: Customer[];
+  deliveryTrips: DeliveryTrip[];
+  deliveryEmployees: DeliveryEmployee[];
+  productionIssues: ProductionIssue[];
+  
+  // Call Center Functions
+  addCustomer: (customer: Omit<Customer, 'id'>) => void;
+  updateCustomer: (id: string, customer: Partial<Customer>) => void;
+  searchCustomerByPhone: (phone: string) => Customer | undefined;
+  
+  addDeliveryTrip: (trip: Omit<DeliveryTrip, 'id' | 'createdAt'>) => void;
+  updateDeliveryTrip: (id: string, trip: Partial<DeliveryTrip>) => void;
+  deleteDeliveryTrip: (id: string) => void;
+  
+  addDeliveryEmployee: (employee: Omit<DeliveryEmployee, 'id'>) => void;
+  updateDeliveryEmployee: (id: string, employee: Partial<DeliveryEmployee>) => void;
+  
+  addProductionIssue: (issue: Omit<ProductionIssue, 'id'>) => void;
+  updateProductionIssue: (id: string, issue: Partial<ProductionIssue>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -129,7 +151,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   ]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<'CASHIER' | 'CUSTOMER' | 'WAITER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR' | null>(null);
+  const [userRole, setUserRole] = useState<'CASHIER' | 'CUSTOMER' | 'WAITER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR' | 'CALL_CENTER_OPERATOR' | null>(null);
   const [currentCart, setCurrentCart] = useState<OrderItem[]>([]);
   const [cartOrderType, setCartOrderType] = useState<OrderType>(OrderType.TAKEAWAY);
   const [currentShift, setCurrentShift] = useState<Shift | null>(null);
@@ -189,6 +211,105 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   ]);
   const [tableAssignments, setTableAssignments] = useState<TableAssignment[]>([]);
+  
+  // Call Center State
+  const [customers, setCustomers] = useState<Customer[]>([
+    {
+      id: 'cust_1',
+      name: 'محمود علي',
+      phone: '0599123456',
+      address: 'شارع الثلاثيني، غزة',
+      area: 'وسط المدينة',
+      registrationDate: new Date(2023, 0, 15),
+      totalOrders: 42,
+      totalSpending: 3850,
+      loyaltyLevel: 'PLATINUM',
+      favoriteCategory: 'مشاوي',
+      orderFrequency: 8,
+      lastOrderDate: new Date(Date.now() - 2 * 24 * 60000),
+      notes: 'عميل VIP، يفضل التوصيل السريع'
+    },
+    {
+      id: 'cust_2',
+      name: 'سارة محمد',
+      phone: '0599234567',
+      address: 'دوار حيدر، غزة',
+      area: 'الرمال',
+      registrationDate: new Date(2023, 6, 20),
+      totalOrders: 18,
+      totalSpending: 1250,
+      loyaltyLevel: 'GOLD',
+      favoriteCategory: 'معكرونة',
+      orderFrequency: 4,
+      lastOrderDate: new Date(Date.now() - 7 * 24 * 60000),
+      notes: 'تفضل الدفع الكاش'
+    }
+  ]);
+
+  const [deliveryEmployees, setDeliveryEmployees] = useState<DeliveryEmployee[]>([
+    {
+      id: 'driver_1',
+      name: 'أحمد محمود',
+      phone: '0599555666',
+      branchId: 'b1',
+      status: 'ACTIVE',
+      totalTrips: 127,
+      totalDeliveries: 312,
+      totalRevenue: 8540,
+      averageOrdersPerTrip: 2.46,
+      averageDeliveryTime: 28,
+      lateDeliveryCount: 8,
+      performanceRating: 4.7,
+      complaintCount: 2,
+      areasCovered: ['وسط المدينة', 'الرمال', 'الشجاعية'],
+      joinDate: new Date(2022, 3, 10)
+    },
+    {
+      id: 'driver_2',
+      name: 'محمد خالد',
+      phone: '0599666777',
+      branchId: 'b1',
+      status: 'ACTIVE',
+      totalTrips: 89,
+      totalDeliveries: 201,
+      totalRevenue: 5420,
+      averageOrdersPerTrip: 2.26,
+      averageDeliveryTime: 32,
+      lateDeliveryCount: 15,
+      performanceRating: 4.2,
+      complaintCount: 5,
+      areasCovered: ['جباليا', 'الشمال', 'القرارة'],
+      joinDate: new Date(2023, 1, 5)
+    }
+  ]);
+
+  const [deliveryTrips, setDeliveryTrips] = useState<DeliveryTrip[]>([
+    {
+      id: 'trip_1',
+      driverId: 'driver_1',
+      orderIds: ['o-1', 'o-2'],
+      status: DeliveryTripStatus.OUT_FOR_DELIVERY,
+      createdAt: new Date(Date.now() - 45 * 60000),
+      dispatchedAt: new Date(Date.now() - 30 * 60000),
+      totalValue: 159,
+      transportationCost: 15,
+      area: 'وسط المدينة',
+      notes: 'عجلة بطيئة'
+    }
+  ]);
+
+  const [productionIssues, setProductionIssues] = useState<ProductionIssue[]>([
+    {
+      id: 'issue_1',
+      departmentId: 'd-grills',
+      orderId: 'o-1',
+      issueType: 'DELAYED',
+      severity: 'MEDIUM',
+      description: 'تأخر في تحضير اللحم المشوي بسبب حمل العمل',
+      status: 'IN_PROGRESS',
+      reportedAt: new Date(Date.now() - 30 * 60000)
+    }
+  ]);
 
   const [branches, setBranches] = useState<Branch[]>([
     { id: 'b1', name: 'فرع غزة الرئيسي', address: 'شارع الثلاثيني', phone: '0599001122', status: 'ACTIVE' },
@@ -241,7 +362,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateEmployee = (id: string, e: Partial<Employee>) => setEmployees(p => p.map(x => x.id === id ? { ...x, ...e } : x));
   const deleteEmployee = (id: string) => setEmployees(p => p.filter(x => x.id !== id));
 
-  const login = (name: string, role: 'CASHIER' | 'CUSTOMER' | 'WAITER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR', phone: string = '', branchId: string = 'b1', departmentId?: string) => {
+  // Call Center Functions
+  const addCustomer = (customer: Omit<Customer, 'id'>) => {
+    setCustomers(p => [...p, { ...customer, id: 'cust_' + Math.random().toString(36).substr(2, 5) }]);
+  };
+
+  const updateCustomer = (id: string, customer: Partial<Customer>) => {
+    setCustomers(p => p.map(c => c.id === id ? { ...c, ...customer } : c));
+  };
+
+  const searchCustomerByPhone = (phone: string): Customer | undefined => {
+    return customers.find(c => c.phone === phone);
+  };
+
+  const addDeliveryTrip = (trip: Omit<DeliveryTrip, 'id' | 'createdAt'>) => {
+    const newTrip: DeliveryTrip = {
+      ...trip,
+      id: 'trip_' + Math.random().toString(36).substr(2, 5),
+      createdAt: new Date()
+    };
+    setDeliveryTrips(p => [newTrip, ...p]);
+  };
+
+  const updateDeliveryTrip = (id: string, trip: Partial<DeliveryTrip>) => {
+    setDeliveryTrips(p => p.map(t => t.id === id ? { ...t, ...trip } : t));
+  };
+
+  const deleteDeliveryTrip = (id: string) => {
+    setDeliveryTrips(p => p.filter(t => t.id !== id));
+  };
+
+  const addDeliveryEmployee = (employee: Omit<DeliveryEmployee, 'id'>) => {
+    setDeliveryEmployees(p => [...p, { ...employee, id: 'driver_' + Math.random().toString(36).substr(2, 5) }]);
+  };
+
+  const updateDeliveryEmployee = (id: string, employee: Partial<DeliveryEmployee>) => {
+    setDeliveryEmployees(p => p.map(d => d.id === id ? { ...d, ...employee } : d));
+  };
+
+  const addProductionIssue = (issue: Omit<ProductionIssue, 'id'>) => {
+    const newIssue: ProductionIssue = {
+      ...issue,
+      id: 'issue_' + Math.random().toString(36).substr(2, 5)
+    };
+    setProductionIssues(p => [newIssue, ...p]);
+  };
+
+  const updateProductionIssue = (id: string, issue: Partial<ProductionIssue>) => {
+    setProductionIssues(p => p.map(i => i.id === id ? { ...i, ...issue } : i));
+  };
+
+  const login = (name: string, role: 'CASHIER' | 'CUSTOMER' | 'WAITER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR' | 'CALL_CENTER_OPERATOR', phone: string = '', branchId: string = 'b1', departmentId?: string) => {
     setUserRole(role);
     setCurrentUser({
       id: 'u_' + Math.random().toString(36).substr(2, 5),
@@ -742,7 +913,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       staffTasks, addTask, updateTask,
       tableAssignments, assignTable,
       seatTable,
-      reorder
+      reorder,
+      customers, deliveryTrips, deliveryEmployees, productionIssues,
+      addCustomer, updateCustomer, searchCustomerByPhone,
+      addDeliveryTrip, updateDeliveryTrip, deleteDeliveryTrip,
+      addDeliveryEmployee, updateDeliveryEmployee,
+      addProductionIssue, updateProductionIssue
     }}>
       {children}
     </AppContext.Provider>

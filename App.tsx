@@ -15,6 +15,7 @@ import { BranchManagerPortal } from './components/BranchManagerPortal';
 import { DepartmentView } from './components/DepartmentView';
 import { OrderAggregatorDashboard } from './components/OrderAggregatorDashboard';
 import { ShelfGridView } from './components/ShelfGridView';
+import { CallCenterDashboard } from './components/CallCenterDashboard';
 
 const Main: React.FC = () => {
   const { currentUser, currentShift, userRole, editingOrderId } = useApp();
@@ -31,6 +32,8 @@ const Main: React.FC = () => {
       setActiveView('dept_dashboard');
     } else if (userRole === 'ORDER_AGGREGATOR') {
       setActiveView('aggregator_dashboard');
+    } else if (userRole === 'CALL_CENTER_OPERATOR') {
+      setActiveView('call_center_dashboard');
     } else if (editingOrderId) {
       setActiveView('pos');
     }
@@ -45,9 +48,10 @@ const Main: React.FC = () => {
     const isHospitality = userRole === 'HOSPITALITY';
     const isDeptStaff = userRole === 'DEPARTMENT_STAFF';
     const isAggregator = userRole === 'ORDER_AGGREGATOR';
+    const isCallCenter = userRole === 'CALL_CENTER_OPERATOR';
 
-    // Branch Managers, Super Admins, Hospitality, and Dept Staff bypass shift check
-    if (!currentShift && !isAdmin && !isBranchManager && !isHospitality && !isDeptStaff && !isAggregator && activeView !== 'shift') {
+    // Branch Managers, Super Admins, Hospitality, Dept Staff, Call Center, and Aggregator bypass shift check
+    if (!currentShift && !isAdmin && !isBranchManager && !isHospitality && !isDeptStaff && !isAggregator && !isCallCenter && activeView !== 'shift') {
       return (
         <div className="h-full flex flex-col items-center justify-center space-y-6 bg-white rounded-[3rem] shadow-sm">
           <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 shadow-inner">
@@ -84,6 +88,10 @@ const Main: React.FC = () => {
       case 'departments': return <DepartmentView />;
       case 'aggregator_dashboard': return <OrderAggregatorDashboard />;
       case 'aggregator_shelves': return <ShelfGridView />;
+      case 'call_center_dashboard': return <CallCenterDashboard initialTab="dashboard" />;
+      case 'call_center_search': return <CallCenterDashboard initialTab="search" />;
+      case 'call_center_delivery': return <CallCenterDashboard initialTab="delivery" />;
+      case 'call_center_analytics': return <CallCenterDashboard initialTab="analytics" />;
       case 'finance': return <FinanceReports />;
       case 'shift': return <ShiftView />;
       case 'org': return <OrgStructure />;

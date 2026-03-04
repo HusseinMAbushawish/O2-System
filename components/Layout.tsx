@@ -25,7 +25,10 @@ import {
   Utensils,
   ChefHat,
   PlayCircle,
-  TrendingUp
+  TrendingUp,
+  Phone,
+  Truck,
+  BarChart3
 } from 'lucide-react';
 
 interface SidebarItemProps {
@@ -64,6 +67,7 @@ export const AppLayout: React.FC<{
   const isHospitality = userRole === 'HOSPITALITY';
   const isDeptStaff = userRole === 'DEPARTMENT_STAFF';
   const isAggregator = userRole === 'ORDER_AGGREGATOR';
+  const isCallCenter = userRole === 'CALL_CENTER_OPERATOR';
 
   return (
     <div className="flex h-screen bg-slate-950 overflow-hidden text-slate-100" dir="rtl">
@@ -154,6 +158,25 @@ export const AppLayout: React.FC<{
                 active={activeView === 'aggregator_shelves'} collapsed={isCollapsed} onClick={() => setActiveView('aggregator_shelves')} 
               />
             </>
+          ) : isCallCenter ? (
+            <>
+              <SidebarItem 
+                icon={LayoutDashboard} label="لوحة التحكم" 
+                active={activeView === 'call_center_dashboard'} collapsed={isCollapsed} onClick={() => setActiveView('call_center_dashboard')} 
+              />
+              <SidebarItem 
+                icon={Phone} label="بحث العملاء" 
+                active={activeView === 'call_center_search'} collapsed={isCollapsed} onClick={() => setActiveView('call_center_search')} 
+              />
+              <SidebarItem 
+                icon={Truck} label="إدارة التوصيل" 
+                active={activeView === 'call_center_delivery'} collapsed={isCollapsed} onClick={() => setActiveView('call_center_delivery')} 
+              />
+              <SidebarItem 
+                icon={BarChart3} label="تحليل الأداء" 
+                active={activeView === 'call_center_analytics'} collapsed={isCollapsed} onClick={() => setActiveView('call_center_analytics')} 
+              />
+            </>
           ) : (
             <>
               <SidebarItem 
@@ -200,7 +223,7 @@ export const AppLayout: React.FC<{
             <div className="px-4 py-2">
               {!isHospitality && (
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">
-                  {isAdmin ? 'الإدارة العامة' : isBranchManager ? `مدير: ${branches.find(b => b.id === currentUser?.branchId)?.name}` : isDeptStaff ? 'موظف قسم' : isAggregator ? 'مجمع طلبات' : 'الكاشير'}
+                  {isAdmin ? 'الإدارة العامة' : isBranchManager ? `مدير: ${branches.find(b => b.id === currentUser?.branchId)?.name}` : isDeptStaff ? 'موظف قسم' : isAggregator ? 'مجمع طلبات' : isCallCenter ? 'مركز الاتصالات' : 'الكاشير'}
                 </p>
               )}
               <p className="text-sm font-black text-slate-100 truncate">{currentUser?.name}</p>

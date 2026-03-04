@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../store';
-import { User, Lock, ArrowRightCircle, Users, ShoppingBag, ShieldCheck, Fingerprint, Store, HeartHandshake, ChefHat } from 'lucide-react';
+import { User, Lock, ArrowRightCircle, Users, ShoppingBag, ShieldCheck, Fingerprint, Store, HeartHandshake, ChefHat, Phone } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, branches, departments } = useApp();
@@ -9,7 +9,7 @@ export const Login: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('b1');
   const [selectedDept, setSelectedDept] = useState('');
-  const [mode, setMode] = useState<'SELECT' | 'CASHIER' | 'CUSTOMER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR'>('SELECT');
+  const [mode, setMode] = useState<'SELECT' | 'CASHIER' | 'CUSTOMER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR' | 'CALL_CENTER_OPERATOR'>('SELECT');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,6 +19,7 @@ export const Login: React.FC = () => {
     else if (mode === 'HOSPITALITY') login(name, 'HOSPITALITY');
     else if (mode === 'DEPARTMENT_STAFF') login(name, 'DEPARTMENT_STAFF', '', selectedBranch, selectedDept);
     else if (mode === 'ORDER_AGGREGATOR') login(name, 'ORDER_AGGREGATOR', '', selectedBranch);
+    else if (mode === 'CALL_CENTER_OPERATOR') login(name, 'CALL_CENTER_OPERATOR', '', selectedBranch);
     else login(name, 'CUSTOMER', phone);
   };
 
@@ -56,6 +57,11 @@ export const Login: React.FC = () => {
             <button onClick={() => setMode('ORDER_AGGREGATOR')} className="group bg-slate-900 p-8 rounded-[3.5rem] border-2 border-white/5 hover:border-red-600 transition-all shadow-2xl flex flex-col items-center gap-6">
               <div className="w-16 h-16 bg-slate-800 text-red-500 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform"><ShoppingBag size={32} /></div>
               <div className="text-center"><h3 className="text-xl font-black text-white">مجمع الطلبات</h3><p className="text-[10px] text-slate-500 mt-2 font-black uppercase tracking-widest">تجميع وتغليف</p></div>
+            </button>
+
+            <button onClick={() => setMode('CALL_CENTER_OPERATOR')} className="group bg-slate-900 p-8 rounded-[3.5rem] border-2 border-white/5 hover:border-red-600 transition-all shadow-2xl flex flex-col items-center gap-6">
+              <div className="w-16 h-16 bg-slate-800 text-red-500 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform"><Phone size={32} /></div>
+              <div className="text-center"><h3 className="text-xl font-black text-white">مركز الاتصالات</h3><p className="text-[10px] text-slate-500 mt-2 font-black uppercase tracking-widest">إدارة الطلبات</p></div>
             </button>
 
             <button onClick={() => setMode('ADMIN')} className="group bg-red-600 p-8 rounded-[3.5rem] text-white shadow-2xl flex flex-col items-center gap-6 hover:bg-red-700 transition-all">
@@ -96,7 +102,7 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          {(mode === 'BRANCH_MANAGER' || mode === 'DEPARTMENT_STAFF' || mode === 'ORDER_AGGREGATOR') && (
+          {(mode === 'BRANCH_MANAGER' || mode === 'DEPARTMENT_STAFF' || mode === 'ORDER_AGGREGATOR' || mode === 'CALL_CENTER_OPERATOR') && (
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 mr-2 uppercase tracking-widest">اختر الفرع</label>
               <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full p-4 bg-slate-800 border border-white/5 rounded-2xl outline-none font-black text-sm text-white focus:ring-2 focus:ring-red-600 transition-all appearance-none">

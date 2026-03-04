@@ -154,14 +154,14 @@ export interface Employee {
   hireDate: Date;
   salary: number;
   status: 'ACTIVE' | 'ON_LEAVE' | 'TERMINATED';
-  role: 'CASHIER' | 'WAITER' | 'MANAGER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'KITCHEN' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR';
+  role: 'CASHIER' | 'WAITER' | 'MANAGER' | 'ADMIN' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'KITCHEN' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR' | 'CALL_CENTER_OPERATOR';
 }
 
 export interface User {
   id: string;
   name: string;
   phone: string;
-  role: 'CASHIER' | 'CUSTOMER' | 'WAITER' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'KITCHEN' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR';
+  role: 'CASHIER' | 'CUSTOMER' | 'WAITER' | 'BRANCH_MANAGER' | 'HOSPITALITY' | 'KITCHEN' | 'DEPARTMENT_STAFF' | 'ORDER_AGGREGATOR' | 'CALL_CENTER_OPERATOR';
   branchId?: string;
   departmentId?: string;
   points: number;
@@ -259,4 +259,73 @@ export interface Shift {
   startTime: Date;
   openingBalance: number;
   status: 'OPEN' | 'CLOSED';
+}
+
+// Call Center Domain Types
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+  area: string;
+  registrationDate: Date;
+  totalOrders: number;
+  totalSpending: number;
+  loyaltyLevel: 'SILVER' | 'GOLD' | 'PLATINUM';
+  favoriteCategory?: string;
+  orderFrequency: number; // orders per month
+  lastOrderDate?: Date;
+  notes?: string;
+}
+
+export enum DeliveryTripStatus {
+  PREPARING = 'PREPARING',
+  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
+  COMPLETED = 'COMPLETED',
+  DELAYED = 'DELAYED',
+  CANCELLED = 'CANCELLED'
+}
+
+export interface DeliveryTrip {
+  id: string;
+  driverId: string;
+  orderIds: string[];
+  status: DeliveryTripStatus;
+  createdAt: Date;
+  dispatchedAt?: Date;
+  completedAt?: Date;
+  totalValue: number;
+  transportationCost: number;
+  area: string;
+  notes?: string;
+}
+
+export interface DeliveryEmployee {
+  id: string;
+  name: string;
+  phone: string;
+  branchId: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+  totalTrips: number;
+  totalDeliveries: number;
+  totalRevenue: number;
+  averageOrdersPerTrip: number;
+  averageDeliveryTime: number; // in minutes
+  lateDeliveryCount: number;
+  performanceRating: number; // 1-5
+  complaintCount: number;
+  areasCovered: string[];
+  joinDate: Date;
+}
+
+export interface ProductionIssue {
+  id: string;
+  departmentId: string;
+  orderId: string;
+  issueType: 'DELAYED' | 'ERROR' | 'QUALITY' | 'MISSING_ITEM';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH';
+  description: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  reportedAt: Date;
+  resolvedAt?: Date;
 }
