@@ -94,6 +94,9 @@ const Main: React.FC = () => {
       case 'call_center_search': return <CallCenterDashboard initialTab="search" />;
       case 'call_center_delivery': return <CallCenterDashboard initialTab="delivery" />;
       case 'call_center_analytics': return <CallCenterDashboard initialTab="analytics" />;
+      case 'call_center_drivers': return <CallCenterDashboard initialTab="drivers" />;
+      case 'call_center_loyalty': return <CallCenterDashboard initialTab="loyalty" />;
+      case 'call_center_live': return <CallCenterDashboard initialTab="live" />;
       case 'finance': return <FinanceReports />;
       case 'shift': return <ShiftView />;
       case 'org': return <OrgStructure />;
