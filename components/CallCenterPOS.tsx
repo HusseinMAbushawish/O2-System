@@ -1,41 +1,57 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Search, Phone, User, MapPin, Clock, Plus, Minus, Trash2, 
+  AlertTriangle, Star, ChevronLeft, ChevronRight, X, Edit3,
+  MessageSquare, CheckCircle, Package, Truck, CreditCard, Banknote,
+  Hash, Heart, History, Send, UserPlus, FileText, AlertCircle, Scale,
+  Timer, Bike, Check, CheckCircle2, Flame, Eye, EyeOff
+} from 'lucide-react';
 import { useApp } from '../store';
 import { MENU_ITEMS, CATEGORIES } from '../constants';
-import { OrderType, OrderStatus, PaymentMethod, MenuItem, Customer, CallCenterComplaint } from '../types';
-import { 
-  Search, Plus, Minus, Trash2, Phone, MapPin, Star, AlertTriangle, 
-  Clock, Truck, Zap, Receipt, X, User, Scale, AlertCircle, MessageSquare, 
-  Send, Check, Package, Timer, Bike, CheckCircle2, Flame,
-  ShoppingBag, TrendingUp, ChevronDown, ChevronUp, Eye, EyeOff, Info, BarChart3,
-  RefreshCw, Heart, Repeat, ArrowDown
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { OrderType, OrderStatus, PaymentMethod, Customer, CallCenterComplaint, MenuItem } from '../types';
 
-// ─── CONSTANTS ───
+// ===================== SAMPLE DATA =====================
+const SAMPLE_CUSTOMERS: Customer[] = [
+  { id: 'c1', name: 'أحمد محمد العلي', phone: '0501234567', address: 'شارع الملك فهد، حي النخيل، فيلا 25', area: 'النخيل', registrationDate: new Date('2023-01-15'), totalOrders: 45, totalSpending: 3250, loyaltyLevel: 'PLATINUM', favoriteCategory: 'shawarma', favoriteItem: '102', orderFrequency: 8, lastOrderDate: new Date(Date.now() - 2 * 24 * 60 * 60000), satisfactionScore: 4.8, hasOpenComplaint: false },
+  { id: 'c2', name: 'فاطمة أحمد السالم', phone: '0559876543', address: 'شارع الأمير سلطان، حي الروضة، شقة 12', area: 'الروضة', registrationDate: new Date('2023-03-20'), totalOrders: 28, totalSpending: 1890, loyaltyLevel: 'GOLD', favoriteCategory: 'oriental_sweets', favoriteItem: '407', orderFrequency: 5, lastOrderDate: new Date(Date.now() - 5 * 24 * 60 * 60000), satisfactionScore: 4.5, hasOpenComplaint: true },
+  { id: 'c3', name: 'خالد عبدالله النصر', phone: '0567891234', address: 'شارع التحلية، حي السليمانية، برج الفيصلية', area: 'السليمانية', registrationDate: new Date('2023-06-10'), totalOrders: 12, totalSpending: 980, loyaltyLevel: 'SILVER', favoriteCategory: 'western', favoriteItem: '301', orderFrequency: 2, lastOrderDate: new Date(Date.now() - 10 * 24 * 60 * 60000), satisfactionScore: 4.2, hasOpenComplaint: false },
+  { id: 'c4', name: 'نورة سعد الدوسري', phone: '0512345678', address: 'شارع العليا، حي الورود، مجمع الراشد', area: 'الورود', registrationDate: new Date('2022-11-05'), totalOrders: 67, totalSpending: 5430, loyaltyLevel: 'PLATINUM', favoriteCategory: 'italian', favoriteItem: '204', orderFrequency: 12, lastOrderDate: new Date(Date.now() - 1 * 24 * 60 * 60000), satisfactionScore: 4.9, hasOpenComplaint: false },
+  { id: 'c5', name: 'محمد علي الشمري', phone: '0598765432', address: 'شارع الستين، حي المروج، فيلا 8', area: 'المروج', registrationDate: new Date('2023-08-22'), totalOrders: 8, totalSpending: 560, loyaltyLevel: 'SILVER', favoriteCategory: 'drinks', favoriteItem: '709', orderFrequency: 2, lastOrderDate: new Date(Date.now() - 15 * 24 * 60 * 60000), satisfactionScore: 3.8, hasOpenComplaint: true },
+  { id: 'c6', name: 'سارة محمد القحطاني', phone: '0534567890', address: 'شارع الأمير محمد، حي الياسمين، شقة 5', area: 'الياسمين', registrationDate: new Date('2023-02-14'), totalOrders: 35, totalSpending: 2780, loyaltyLevel: 'GOLD', favoriteCategory: 'cake', favoriteItem: '507', orderFrequency: 6, lastOrderDate: new Date(Date.now() - 3 * 24 * 60 * 60000), satisfactionScore: 4.6, hasOpenComplaint: false },
+  { id: 'c7', name: 'عبدالرحمن خالد المطيري', phone: '0576543210', address: 'شارع الملك عبدالعزيز، حي الصفا، برج النخيل', area: 'الصفا', registrationDate: new Date('2023-04-30'), totalOrders: 22, totalSpending: 1650, loyaltyLevel: 'GOLD', favoriteCategory: 'bar_sweets', favoriteItem: '601', orderFrequency: 4, lastOrderDate: new Date(Date.now() - 7 * 24 * 60 * 60000), satisfactionScore: 4.3, hasOpenComplaint: false },
+  { id: 'c8', name: 'منى عبدالله الحربي', phone: '0543216789', address: 'شارع الثلاثين، حي النسيم، منزل 15', area: 'النسيم', registrationDate: new Date('2023-09-15'), totalOrders: 5, totalSpending: 320, loyaltyLevel: 'SILVER', favoriteCategory: 'gelato', favoriteItem: '902', orderFrequency: 1, lastOrderDate: new Date(Date.now() - 20 * 24 * 60 * 60000), satisfactionScore: 4.0, hasOpenComplaint: false },
+  { id: 'c9', name: 'يوسف إبراهيم العتيبي', phone: '0587654321', address: 'شارع الأربعين، حي الملز، شقة 22', area: 'الملز', registrationDate: new Date('2022-08-10'), totalOrders: 89, totalSpending: 7250, loyaltyLevel: 'PLATINUM', favoriteCategory: 'shawarma', favoriteItem: '108', orderFrequency: 15, lastOrderDate: new Date(Date.now() - 0.5 * 24 * 60 * 60000), satisfactionScore: 5.0, hasOpenComplaint: false },
+  { id: 'c10', name: 'ليلى سالم الزهراني', phone: '0521098765', address: 'شارع الخمسين، حي الربوة، فيلا 30', area: 'الربوة', registrationDate: new Date('2023-05-25'), totalOrders: 18, totalSpending: 1420, loyaltyLevel: 'GOLD', favoriteCategory: 'salads', favoriteItem: '801', orderFrequency: 3, lastOrderDate: new Date(Date.now() - 4 * 24 * 60 * 60000), satisfactionScore: 4.4, hasOpenComplaint: false },
+];
+
+const SAMPLE_COMPLAINTS: CallCenterComplaint[] = [
+  { id: 'comp1', customerPhone: '0559876543', customerName: 'فاطمة أحمد السالم', orderId: 'ORD-2001', issueType: 'DELAY', angerLevel: 3, description: 'تأخر الطلب ساعة كاملة', proposedSolution: 'خصم 20% على الطلب القادم', status: 'OPEN', createdAt: new Date(Date.now() - 2 * 60 * 60000), agentName: 'محمد' },
+  { id: 'comp2', customerPhone: '0598765432', customerName: 'محمد علي الشمري', orderId: 'ORD-1998', issueType: 'COLD_FOOD', angerLevel: 4, description: 'الطعام وصل بارد تماماً', proposedSolution: 'إعادة الطلب مجاناً', status: 'IN_PROGRESS', createdAt: new Date(Date.now() - 5 * 60 * 60000), agentName: 'سارة' },
+];
+
+const SAMPLE_DRIVERS = [
+  { id: 'd1', name: 'أحمد الدليفري', phone: '0551112233', status: 'ACTIVE' as const, currentOrders: 2, area: 'النخيل' },
+  { id: 'd2', name: 'محمد السائق', phone: '0552223344', status: 'ACTIVE' as const, currentOrders: 1, area: 'الروضة' },
+  { id: 'd3', name: 'خالد التوصيل', phone: '0553334455', status: 'ACTIVE' as const, currentOrders: 0, area: 'السليمانية' },
+  { id: 'd4', name: 'عبدالله الموصل', phone: '0554445566', status: 'INACTIVE' as const, currentOrders: 0, area: 'الورود' },
+  { id: 'd5', name: 'سعود المندوب', phone: '0555556677', status: 'ACTIVE' as const, currentOrders: 3, area: 'المروج' },
+];
+
 const DELIVERY_ZONES = [
-  { id: 'z1', name: 'وسط المدينة', price: 10 },
-  { id: 'z2', name: 'الرمال', price: 12 },
-  { id: 'z3', name: 'الشجاعية', price: 15 },
-  { id: 'z4', name: 'جباليا', price: 18 },
-  { id: 'z5', name: 'الشمال', price: 20 },
-  { id: 'z6', name: 'القرارة', price: 25 },
-  { id: 'z7', name: 'خانيونس', price: 30 },
-  { id: 'z8', name: 'رفح', price: 35 },
-];
-const SWEETS_CATEGORIES = ['oriental_sweets', 'cake', 'bar_sweets', 'gelato'];
-const COMPLAINT_TYPES: { value: CallCenterComplaint['issueType']; label: string }[] = [
-  { value: 'COLD_FOOD', label: 'أكل بارد' },
-  { value: 'DELAY', label: 'تأخير' },
-  { value: 'WRONG_ITEM', label: 'صنف خاطئ' },
-  { value: 'MISSING_ITEM', label: 'صنف ناقص' },
-  { value: 'QUALITY', label: 'جودة رديئة' },
-  { value: 'DRIVER', label: 'مشكلة سائق' },
-  { value: 'OTHER', label: 'أخرى' },
+  { id: 'z1', name: 'النخيل', price: 10 },
+  { id: 'z2', name: 'الروضة', price: 12 },
+  { id: 'z3', name: 'السليمانية', price: 15 },
+  { id: 'z4', name: 'الورود', price: 18 },
+  { id: 'z5', name: 'المروج', price: 20 },
+  { id: 'z6', name: 'الياسمين', price: 15 },
+  { id: 'z7', name: 'الصفا', price: 25 },
+  { id: 'z8', name: 'النسيم', price: 30 },
 ];
 
-// ═══════════════════════════════════════
-// ═══  WEIGHT POPUP (Sweets Only)   ═══
-// ═══════════════════════════════════════
+const SWEETS_CATEGORIES = ['oriental_sweets', 'cake', 'bar_sweets', 'gelato'];
+
+// ===================== WEIGHT POPUP =====================
 const WeightPopup: React.FC<{ item: MenuItem; onConfirm: (w: number, t: number) => void; onClose: () => void }> = ({ item, onConfirm, onClose }) => {
   const [weight, setWeight] = useState(0);
   const [input, setInput] = useState('');
@@ -53,903 +69,897 @@ const WeightPopup: React.FC<{ item: MenuItem; onConfirm: (w: number, t: number) 
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-slate-900 rounded-2xl p-5 w-full max-w-sm border border-white/10" onClick={e => e.stopPropagation()} dir="rtl">
+      <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-slate-900 rounded-2xl p-5 w-full max-w-sm border border-slate-700" onClick={e => e.stopPropagation()} dir="rtl">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2"><Scale size={18} className="text-amber-500" /><h3 className="text-base font-black text-white">{item.nameAr}</h3></div>
+          <div className="flex items-center gap-2"><Scale size={18} className="text-amber-500" /><h3 className="text-base font-bold text-white">{item.nameAr}</h3></div>
           <button onClick={onClose} className="text-slate-500 hover:text-white"><X size={18} /></button>
         </div>
-        <p className="text-slate-500 text-xs mb-3">{'السعر: '}<span className="text-white font-bold">{item.price}</span>{' شيكل/كغ'}</p>
+        <p className="text-slate-500 text-xs mb-3">السعر: <span className="text-white font-bold">{item.price}</span> ر.س/كغ</p>
         <div className="grid grid-cols-5 gap-1.5 mb-3">
           {quickWeights.map(qw => (
             <button key={qw.v} onClick={() => { setWeight(qw.v); setInput(String(qw.v)); }}
-              className={`py-2.5 rounded-lg font-black text-xs transition-all ${weight === qw.v ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{qw.label}</button>
+              className={`py-2.5 rounded-lg font-bold text-xs transition-all ${weight === qw.v ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{qw.label}</button>
           ))}
         </div>
         <div className="grid grid-cols-4 gap-1.5 mb-3">
           {['1','2','3','C','4','5','6','.','7','8','9','0'].map(d => (
             <button key={d} onClick={() => handleKeypad(d)}
-              className={`py-2.5 rounded-lg font-black text-sm ${d === 'C' ? 'bg-red-600/20 text-red-400' : 'bg-slate-800 text-white hover:bg-slate-700'}`}>{d}</button>
+              className={`py-2.5 rounded-lg font-bold text-sm ${d === 'C' ? 'bg-red-600/20 text-red-400' : 'bg-slate-800 text-white hover:bg-slate-700'}`}>{d}</button>
           ))}
         </div>
         <div className="bg-slate-800/80 rounded-xl p-3 mb-3 flex items-center justify-between">
-          <div><p className="text-[10px] text-slate-500">الوزن</p><p className="text-lg font-black text-white">{weight > 0 ? `${weight} كغ` : '---'}</p></div>
-          <div className="text-left"><p className="text-[10px] text-slate-500">الاجمالي</p><p className="text-lg font-black text-red-500">{total > 0 ? `${total.toFixed(1)} شيكل` : '---'}</p></div>
+          <div><p className="text-[10px] text-slate-500">الوزن</p><p className="text-lg font-bold text-white">{weight > 0 ? `${weight} كغ` : '---'}</p></div>
+          <div className="text-left"><p className="text-[10px] text-slate-500">الإجمالي</p><p className="text-lg font-bold text-blue-400">{total > 0 ? `${total.toFixed(1)} ر.س` : '---'}</p></div>
         </div>
         <button onClick={() => { if (weight > 0) onConfirm(weight, total); }} disabled={weight <= 0}
-          className="w-full py-3 bg-red-600 text-white rounded-xl font-black text-sm hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed">{'اضافة للفاتورة'}</button>
+          className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed">إضافة للفاتورة</button>
       </motion.div>
     </motion.div>
   );
 };
 
-// ═══════════════════════════════════════
-// ═══  FEEDBACK POPUP              ═══
-// ═══════════════════════════════════════
-const FeedbackPopup: React.FC<{ customerName: string; onSubmit: (rating: number) => void; onClose: () => void }> = ({ customerName, onSubmit, onClose }) => {
-  const [rating, setRating] = useState(0);
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-slate-900 rounded-2xl p-6 w-full max-w-xs border border-white/10 text-center" onClick={e => e.stopPropagation()} dir="rtl">
-        <CheckCircle2 size={40} className="text-emerald-500 mx-auto mb-3" />
-        <h3 className="text-lg font-black text-white mb-1">{'تم التوصيل بنجاح!'}</h3>
-        <p className="text-xs text-slate-400 mb-4">{'تقييم رضا العميل: '}{customerName}</p>
-        <div className="flex items-center justify-center gap-2 mb-5">
-          {[1,2,3,4,5].map(s => (
-            <button key={s} onClick={() => setRating(s)} className="transition-transform hover:scale-110">
-              <Star size={28} className={s <= rating ? 'text-amber-400 fill-amber-400' : 'text-slate-700'} />
-            </button>
-          ))}
-        </div>
-        <button onClick={() => { if (rating > 0) onSubmit(rating); }} disabled={rating === 0}
-          className="w-full py-3 bg-emerald-600 text-white rounded-xl font-black text-sm disabled:opacity-30">{'تسجيل التقييم'}</button>
-      </motion.div>
-    </motion.div>
-  );
-};
-
-// ═══════════════════════════════════════
-// ═══  ORDER STEPPER               ═══
-// ═══════════════════════════════════════
-const OrderStepper: React.FC<{ timeline: { status: OrderStatus; time: Date }[]; createdAt: Date }> = ({ timeline, createdAt }) => {
-  const steps = [
-    { status: 'CALL_RECEIVED', label: 'استلام', icon: Phone, color: 'sky' },
-    { status: OrderStatus.CONFIRMED, label: 'مؤكد', icon: Check, color: 'blue' },
-    { status: OrderStatus.PREPARING, label: 'التحضير', icon: Package, color: 'amber' },
-    { status: OrderStatus.READY, label: 'جاهز', icon: CheckCircle2, color: 'orange' },
-    { status: OrderStatus.ON_DELIVERY, label: 'في الطريق', icon: Bike, color: 'purple' },
-    { status: OrderStatus.DELIVERED, label: 'تم', icon: CheckCircle2, color: 'emerald' },
-  ];
-  const allTimes = [{ status: 'CALL_RECEIVED' as any, time: createdAt }, ...timeline];
-  const activeIdx = steps.findIndex(s => !allTimes.find(t => t.status === s.status));
-  const currentIdx = activeIdx === -1 ? steps.length : activeIdx;
-
-  return (
-    <div className="flex items-center gap-0.5 py-2" dir="rtl">
-      {steps.map((step, idx) => {
-        const Icon = step.icon;
-        const isDone = idx < currentIdx;
-        const isCurrent = idx === currentIdx;
-        const prevTime = idx > 0 ? allTimes.find(t => t.status === steps[idx - 1].status)?.time : null;
-        const currTime = allTimes.find(t => t.status === step.status)?.time;
-        const diff = prevTime && currTime ? Math.round((currTime.getTime() - prevTime.getTime()) / 60000) : null;
-        return (
-          <React.Fragment key={step.status}>
-            <div className="flex flex-col items-center gap-0.5 min-w-[52px]">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] ${isDone ? 'bg-emerald-600 text-white' : isCurrent ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-800 text-slate-600'}`}>
-                <Icon size={13} />
-              </div>
-              <p className={`text-[8px] font-bold text-center leading-none ${isDone ? 'text-emerald-500' : isCurrent ? 'text-red-400' : 'text-slate-600'}`}>{step.label}</p>
-              {diff !== null && <p className="text-[8px] text-slate-600 font-mono">{diff}{'د'}</p>}
-            </div>
-            {idx < steps.length - 1 && <div className={`flex-1 h-px mt-[-14px] ${isDone ? 'bg-emerald-600' : 'bg-slate-800'}`} />}
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
-};
-
-// ═══════════════════════════════════════
-// ═══  ACTIVE ORDERS CARDS (Visual) ═══
-// ═══════════════════════════════════════
-const ActiveOrderCard: React.FC<{ order: any; elapsed: number }> = ({ order, elapsed }) => {
-  const isNew = order.status === OrderStatus.CONFIRMED || order.status === OrderStatus.PENDING;
-  const isPreparing = order.status === OrderStatus.PREPARING || order.status === OrderStatus.IN_PROGRESS;
-  const isReady = order.status === OrderStatus.READY;
-  const isDelivering = order.status === OrderStatus.ON_DELIVERY;
-  const isLate = elapsed > 45;
-
-  let borderColor = 'border-emerald-600/40';
-  let bgColor = 'bg-emerald-600/5';
-  let statusText = 'جديد';
-  let statusBg = 'bg-emerald-600 text-white';
-
-  if (isLate) {
-    borderColor = 'border-red-600/60';
-    bgColor = 'bg-red-600/10';
-    statusText = 'متأخر!';
-    statusBg = 'bg-red-600 text-white animate-pulse';
-  } else if (isPreparing) {
-    borderColor = 'border-amber-500/40';
-    bgColor = 'bg-amber-500/5';
-    statusText = 'قيد التجهيز';
-    statusBg = 'bg-amber-500 text-black';
-  } else if (isReady) {
-    borderColor = 'border-blue-500/40';
-    bgColor = 'bg-blue-500/5';
-    statusText = 'جاهز للتوصيل';
-    statusBg = 'bg-blue-500 text-white';
-  } else if (isDelivering) {
-    borderColor = 'border-purple-500/40';
-    bgColor = 'bg-purple-500/5';
-    statusText = 'في الطريق';
-    statusBg = 'bg-purple-500 text-white';
-  }
-
-  return (
-    <motion.div 
-      initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-      className={`${bgColor} border ${borderColor} rounded-xl p-3 transition-all hover:shadow-lg`}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-black text-white">#{order.orderNumber}</span>
-        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${statusBg}`}>{statusText}</span>
-      </div>
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] text-slate-400">{order.customerName || 'عميل'}</span>
-        <span className="text-[10px] font-black text-red-500">{order.total?.toFixed(0)} {'شيكل'}</span>
-      </div>
-      <div className="flex items-center gap-1.5 text-[9px] text-slate-500">
-        <Timer size={10} />
-        <span className="font-mono">{elapsed} {'دقيقة'}</span>
-        <span className="text-slate-700">{'|'}</span>
-        <span>{order.items?.length || 0} {'اصناف'}</span>
-      </div>
-    </motion.div>
-  );
-};
-
-// ═══════════════════════════════════════
-// ═══  SMART CART SUGGESTIONS       ═══
-// ═══════════════════════════════════════
-const SmartCartSuggestions: React.FC<{ customer: Customer; onAddItem: (item: MenuItem) => void }> = ({ customer, onAddItem }) => {
-  const lastOrderItem = customer.favoriteItem ? MENU_ITEMS.find(i => i.nameAr === customer.favoriteItem) : null;
-  const frequentCategory = customer.favoriteCategory;
-  const categoryItems = frequentCategory ? MENU_ITEMS.filter(i => {
-    const cat = CATEGORIES.find(c => c.name === frequentCategory);
-    return cat ? i.category === cat.id : false;
-  }).slice(0, 3) : [];
-
-  if (!lastOrderItem && categoryItems.length === 0) return null;
-
-  return (
-    <div className="bg-slate-800/30 rounded-lg p-2 border border-white/[0.03]">
-      <p className="text-[9px] font-black text-slate-500 mb-1.5 flex items-center gap-1"><Heart size={9} className="text-red-500" /> {'اقتراحات ذكية'}</p>
-      {lastOrderItem && (
-        <button onClick={() => onAddItem(lastOrderItem)}
-          className="w-full flex items-center gap-2 p-1.5 bg-red-600/10 rounded-lg border border-red-600/20 hover:bg-red-600/20 transition-all mb-1">
-          <Repeat size={10} className="text-red-500 flex-shrink-0" />
-          <div className="flex-1 min-w-0 text-right">
-            <p className="text-[10px] font-black text-white truncate">{lastOrderItem.nameAr}</p>
-            <p className="text-[8px] text-slate-500">{'الطلب الاكثر تكرارا'}</p>
-          </div>
-          <span className="text-[10px] font-black text-red-500">{lastOrderItem.price}{'$'}</span>
-          <Plus size={12} className="text-red-500 flex-shrink-0" />
-        </button>
-      )}
-      {categoryItems.length > 0 && (
-        <div className="flex gap-1 mt-1">
-          {categoryItems.map(item => (
-            <button key={item.id} onClick={() => onAddItem(item)}
-              className="flex-1 p-1.5 bg-slate-800/60 rounded text-center hover:bg-slate-700 transition-all border border-white/[0.03]">
-              <p className="text-[9px] font-black text-slate-300 truncate">{item.nameAr}</p>
-              <p className="text-[9px] font-black text-red-500">{item.price}</p>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ═══════════════════════════════════════
-// ═══  DRIVER PERF TABLE            ═══
-// ═══════════════════════════════════════
-const DriverTable: React.FC<{ drivers: any[] }> = ({ drivers }) => (
-  <div className="overflow-auto custom-scrollbar">
-    <table className="w-full text-xs" dir="rtl">
-      <thead>
-        <tr className="border-b border-white/5">
-          <th className="text-right py-2 px-2 text-slate-500 font-bold">{'السائق'}</th>
-          <th className="text-center py-2 px-1 text-slate-500 font-bold">{'الطلبات'}</th>
-          <th className="text-center py-2 px-1 text-slate-500 font-bold">{'المتوسط'}</th>
-          <th className="text-center py-2 px-1 text-slate-500 font-bold">{'النجاح'}</th>
-          <th className="text-center py-2 px-1 text-slate-500 font-bold">{'التقييم'}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {drivers.map(d => {
-          const successRate = d.totalDeliveries > 0 ? Math.round(((d.totalDeliveries - d.lateDeliveryCount) / d.totalDeliveries) * 100) : 100;
-          return (
-            <tr key={d.id} className="border-b border-white/5 hover:bg-slate-800/30">
-              <td className="py-2 px-2">
-                <p className="font-black text-white">{d.name}</p>
-                <p className="text-[10px] text-slate-600">{d.areasCovered.slice(0, 2).join('، ')}</p>
-              </td>
-              <td className="text-center py-2 px-1 font-black text-white">{d.totalDeliveries}</td>
-              <td className="text-center py-2 px-1 font-bold text-slate-300">{d.averageDeliveryTime}{'د'}</td>
-              <td className="text-center py-2 px-1">
-                <span className={`font-black ${successRate >= 90 ? 'text-emerald-400' : successRate >= 75 ? 'text-amber-400' : 'text-red-400'}`}>{successRate}{'%'}</span>
-              </td>
-              <td className="text-center py-2 px-1">
-                <span className="flex items-center justify-center gap-0.5"><Star size={10} className="text-amber-500" /><span className="font-black text-white">{d.performanceRating}</span></span>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  </div>
-);
-
-// ═══════════════════════════════════════════
-// ═══  MAIN CALL CENTER POS COMPONENT   ═══
-// ═══════════════════════════════════════════
+// ===================== COMPONENT =====================
 export const CallCenterPOS: React.FC = () => {
-  const {
-    addToCart, currentCart, removeFromCart, updateCartQuantity, submitOrder, clearCart,
-    customers, searchCustomerByPhone, addCustomer, updateCustomer,
-    deliveryEmployees, deliveryTrips, activeOrders,
-    callCenterComplaints, addCallCenterComplaint, updateCallCenterComplaint,
-    currentUser, setOrderType
+  const { 
+    activeOrders, 
+    currentCart, 
+    addToCart, 
+    removeFromCart, 
+    updateCartQuantity, 
+    clearCart,
+    submitOrder,
+    customers: storeCustomers,
+    addCustomer,
+    callCenterComplaints: storeComplaints,
+    addCallCenterComplaint,
+    setOrderType
   } = useApp();
 
-  // ─── State ───
+  // Merge store data with sample data
+  const allCustomers = useMemo(() => [...SAMPLE_CUSTOMERS, ...storeCustomers], [storeCustomers]);
+  const allComplaints = useMemo(() => [...SAMPLE_COMPLAINTS, ...storeComplaints], [storeComplaints]);
+
+  // ========== STATE ==========
+  const [phoneSearch, setPhoneSearch] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [phoneInput, setPhoneInput] = useState('');
-  const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
-  const [isNewCustomer, setIsNewCustomer] = useState(false);
-  const [newCustName, setNewCustName] = useState('');
-  const [newCustAddress, setNewCustAddress] = useState('');
-  const [newCustArea, setNewCustArea] = useState('وسط المدينة');
-  const [selectedZone, setSelectedZone] = useState(DELIVERY_ZONES[0]);
-  const [isExpress, setIsExpress] = useState(false);
-  const [selectedDriverId, setSelectedDriverId] = useState('');
-  const [discountAmount, setDiscountAmount] = useState(0);
-  const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
+  const [productIdInput, setProductIdInput] = useState('');
+  const [manualTotal, setManualTotal] = useState<string>('');
   const [orderNote, setOrderNote] = useState('');
+  const [selectedDriver, setSelectedDriver] = useState<string>('');
+  const [selectedZone, setSelectedZone] = useState(DELIVERY_ZONES[0]);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [showComplaintBox, setShowComplaintBox] = useState(false);
+  const [activeOrderTab, setActiveOrderTab] = useState<string | null>(null);
   const [weightItem, setWeightItem] = useState<MenuItem | null>(null);
-  const [rightTab, setRightTab] = useState<'context' | 'complaints' | 'orders'>('context');
-  const [showMoreProfile, setShowMoreProfile] = useState(false);
-  const [feedbackPopup, setFeedbackPopup] = useState<{ orderId: string; customerName: string } | null>(null);
-  const [manualTotal, setManualTotal] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
+  
+  // New customer form
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', address: '', area: '' });
+  
+  // Complaint form
+  const [complaintForm, setComplaintForm] = useState({ 
+    issueType: 'DELAY' as CallCenterComplaint['issueType'], 
+    angerLevel: 3, 
+    description: '', 
+    proposedSolution: '' 
+  });
 
-  // Complaint state
-  const [complaintType, setComplaintType] = useState<CallCenterComplaint['issueType']>('DELAY');
-  const [complaintAnger, setComplaintAnger] = useState(3);
-  const [complaintDesc, setComplaintDesc] = useState('');
-  const [complaintSolution, setComplaintSolution] = useState('');
-  const [complaintOrderId, setComplaintOrderId] = useState('');
+  // Orders navigation ref
+  const ordersNavRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setOrderType(OrderType.DELIVERY); }, []);
+  // Set order type on mount
+  useEffect(() => { setOrderType(OrderType.DELIVERY); }, [setOrderType]);
 
-  // ─── Computed ───
-  const filteredItems = useMemo(() => {
-    return MENU_ITEMS.filter(item =>
-      (selectedCategory === 'all' || item.category === selectedCategory) &&
-      (item.nameAr.includes(searchQuery) || item.id.includes(searchQuery))
-    );
-  }, [selectedCategory, searchQuery]);
+  // Timer for order elapsed time
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const subtotal = currentCart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const discountValue = discountType === 'percent' ? subtotal * (discountAmount / 100) : discountAmount;
-  const deliveryFee = isExpress ? 0 : selectedZone.price;
-  const grandTotal = manualTotal !== null ? manualTotal : Math.max(0, subtotal - discountValue + deliveryFee);
+  // ========== COMPUTED ==========
+  const deliveryOrders = useMemo(() => 
+    activeOrders.filter(o => o.type === OrderType.DELIVERY && o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELED),
+    [activeOrders]
+  );
 
-  const todayOrders = activeOrders.filter(o => o.type === OrderType.DELIVERY);
-  const avgDeliveryTime = deliveryEmployees.length > 0 
-    ? Math.round(deliveryEmployees.reduce((s, d) => s + d.averageDeliveryTime, 0) / deliveryEmployees.length) 
-    : 0;
-  const openComplaints = callCenterComplaints.filter(c => c.status === 'OPEN').length;
-  const customerComplaints = foundCustomer ? callCenterComplaints.filter(c => c.customerPhone === foundCustomer.phone) : [];
-  const customerOrders = foundCustomer ? activeOrders.filter(o => o.customerPhone === foundCustomer.phone) : [];
+  const filteredMenu = useMemo(() => {
+    if (selectedCategory === 'all') return MENU_ITEMS;
+    return MENU_ITEMS.filter(item => item.category === selectedCategory);
+  }, [selectedCategory]);
 
-  // ─── Handlers ───
-  const handlePhoneSearch = useCallback(() => {
-    const customer = searchCustomerByPhone(phoneInput);
-    if (customer) {
-      setFoundCustomer(customer);
-      setIsNewCustomer(false);
-      const zone = DELIVERY_ZONES.find(z => z.name === customer.area);
-      if (zone) setSelectedZone(zone);
-    } else {
-      setFoundCustomer(null);
-      setIsNewCustomer(true);
+  const cartSubtotal = useMemo(() => 
+    currentCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [currentCart]
+  );
+
+  const deliveryFee = selectedZone.price;
+
+  const finalTotal = useMemo(() => {
+    if (manualTotal && !isNaN(parseFloat(manualTotal))) {
+      return parseFloat(manualTotal);
     }
-  }, [phoneInput, searchCustomerByPhone]);
+    return cartSubtotal + deliveryFee;
+  }, [cartSubtotal, manualTotal, deliveryFee]);
 
-  const handleCreateCustomer = () => {
-    if (!newCustName.trim()) return;
-    addCustomer({
-      name: newCustName, phone: phoneInput, address: newCustAddress, area: newCustArea,
-      registrationDate: new Date(), totalOrders: 0, totalSpending: 0, loyaltyLevel: 'SILVER',
-      orderFrequency: 0, satisfactionScore: 5, hasOpenComplaint: false
-    });
-    const created = searchCustomerByPhone(phoneInput);
-    if (created) setFoundCustomer(created);
-    setIsNewCustomer(false);
+  const customerComplaint = useMemo(() => {
+    if (!selectedCustomer) return null;
+    return allComplaints.find(c => c.customerPhone === selectedCustomer.phone && c.status !== 'RESOLVED');
+  }, [selectedCustomer, allComplaints]);
+
+  const customerFavoriteItem = useMemo(() => {
+    if (!selectedCustomer?.favoriteItem) return null;
+    return MENU_ITEMS.find(item => item.id === selectedCustomer.favoriteItem);
+  }, [selectedCustomer]);
+
+  // ========== HANDLERS ==========
+  const handlePhoneSearch = (phone: string) => {
+    setPhoneSearch(phone);
+    if (phone.length >= 10) {
+      const customer = allCustomers.find(c => c.phone === phone || c.phone.includes(phone));
+      if (customer) {
+        setSelectedCustomer(customer);
+        setShowNewCustomerForm(false);
+        // Auto-select zone based on customer area
+        const zone = DELIVERY_ZONES.find(z => z.name === customer.area);
+        if (zone) setSelectedZone(zone);
+      } else {
+        setSelectedCustomer(null);
+        setShowNewCustomerForm(true);
+        setNewCustomer(prev => ({ ...prev, phone }));
+      }
+    } else {
+      setSelectedCustomer(null);
+      setShowNewCustomerForm(false);
+    }
+  };
+
+  const handleProductIdSubmit = () => {
+    if (!productIdInput) return;
+    const item = MENU_ITEMS.find(m => m.id === productIdInput);
+    if (item) {
+      handleAddItem(item);
+      setProductIdInput('');
+    }
   };
 
   const handleAddItem = (item: MenuItem) => {
-    if (SWEETS_CATEGORIES.includes(item.category)) { setWeightItem(item); return; }
-    addToCart(item);
-    setManualTotal(null);
+    if (SWEETS_CATEGORIES.includes(item.category)) {
+      setWeightItem(item);
+    } else {
+      addToCart(item);
+    }
   };
 
-  const handleSubmitOrder = () => {
-    if (currentCart.length === 0) return;
-    const finalDiscount = manualTotal !== null ? (subtotal + deliveryFee - manualTotal) : discountValue;
-    submitOrder(OrderStatus.CONFIRMED, paymentMethod, Math.max(0, finalDiscount), {
-      name: foundCustomer?.name || newCustName || 'عميل', phone: phoneInput, note: orderNote
-    });
-    if (foundCustomer) {
-      updateCustomer(foundCustomer.id, {
-        totalOrders: foundCustomer.totalOrders + 1,
-        totalSpending: foundCustomer.totalSpending + grandTotal,
-        lastOrderDate: new Date()
-      });
+  const handleWeightConfirm = (weight: number, total: number) => {
+    if (weightItem) {
+      addToCart({ ...weightItem, price: total } as MenuItem, { weight });
+      setWeightItem(null);
     }
-    setFoundCustomer(null); setPhoneInput(''); setOrderNote(''); setDiscountAmount(0); setManualTotal(null);
+  };
+
+  const handleAddNewCustomer = () => {
+    if (newCustomer.name && newCustomer.phone && newCustomer.address) {
+      const customer: Customer = {
+        id: `c-${Date.now()}`,
+        name: newCustomer.name,
+        phone: newCustomer.phone,
+        address: newCustomer.address,
+        area: newCustomer.area || 'غير محدد',
+        registrationDate: new Date(),
+        totalOrders: 0,
+        totalSpending: 0,
+        loyaltyLevel: 'SILVER',
+        orderFrequency: 0,
+        satisfactionScore: 5,
+      };
+      addCustomer(customer);
+      setSelectedCustomer(customer);
+      setShowNewCustomerForm(false);
+      setNewCustomer({ name: '', phone: '', address: '', area: '' });
+    }
   };
 
   const handleSubmitComplaint = () => {
-    if (!complaintDesc.trim()) return;
-    addCallCenterComplaint({
-      customerPhone: phoneInput || foundCustomer?.phone || '',
-      customerName: foundCustomer?.name || 'غير معرف',
-      orderId: complaintOrderId || undefined,
-      issueType: complaintType, angerLevel: complaintAnger,
-      description: complaintDesc, proposedSolution: complaintSolution,
-      agentName: currentUser?.name
-    });
-    setComplaintDesc(''); setComplaintSolution(''); setComplaintAnger(3); setComplaintOrderId('');
-  };
-
-  const handleFeedback = (rating: number) => {
-    if (feedbackPopup && foundCustomer) {
-      updateCustomer(foundCustomer.id, { satisfactionScore: rating });
+    if (selectedCustomer && complaintForm.description) {
+      addCallCenterComplaint({
+        customerPhone: selectedCustomer.phone,
+        customerName: selectedCustomer.name,
+        issueType: complaintForm.issueType,
+        angerLevel: complaintForm.angerLevel,
+        description: complaintForm.description,
+        proposedSolution: complaintForm.proposedSolution,
+        agentName: 'المشغل الحالي'
+      });
+      setShowComplaintBox(false);
+      setComplaintForm({ issueType: 'DELAY', angerLevel: 3, description: '', proposedSolution: '' });
     }
-    setFeedbackPopup(null);
   };
 
-  // ═══════════════════════════
-  // ═══  RENDER  ═══
-  // ═══════════════════════════
+  const handleSubmitOrder = () => {
+    if (!selectedCustomer || currentCart.length === 0) return;
+    
+    submitOrder(
+      OrderStatus.PENDING,
+      paymentMethod,
+      manualTotal ? (cartSubtotal + deliveryFee) - parseFloat(manualTotal) : 0,
+      {
+        name: selectedCustomer.name,
+        phone: selectedCustomer.phone,
+        note: orderNote
+      }
+    );
+    
+    setManualTotal('');
+    setOrderNote('');
+    setSelectedDriver('');
+  };
+
+  const scrollOrders = (direction: 'left' | 'right') => {
+    if (ordersNavRef.current) {
+      const scrollAmount = 200;
+      ordersNavRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const getOrderTimerColor = (createdAt: Date) => {
+    const minutes = Math.floor((now - new Date(createdAt).getTime()) / 60000);
+    if (minutes < 15) return 'bg-emerald-500';
+    if (minutes < 30) return 'bg-amber-500';
+    if (minutes < 45) return 'bg-orange-500';
+    return 'bg-red-500';
+  };
+
+  const getOrderTimer = (createdAt: Date) => {
+    const minutes = Math.floor((now - new Date(createdAt).getTime()) / 60000);
+    return `${minutes} د`;
+  };
+
+  const getLoyaltyBadge = (level: string) => {
+    switch (level) {
+      case 'PLATINUM': return { color: 'bg-gradient-to-r from-slate-400 to-slate-600', text: 'بلاتيني' };
+      case 'GOLD': return { color: 'bg-gradient-to-r from-amber-400 to-amber-600', text: 'ذهبي' };
+      default: return { color: 'bg-gradient-to-r from-gray-300 to-gray-500', text: 'فضي' };
+    }
+  };
+
+  // ========== RENDER ==========
   return (
-    <div className="h-full flex gap-0 overflow-hidden bg-slate-950" dir="rtl">
-      <AnimatePresence>
-        {weightItem && <WeightPopup item={weightItem} onConfirm={(w, t) => { addToCart(weightItem, { quantity: w, price: t / w, note: `${w} كغ` }); setWeightItem(null); }} onClose={() => setWeightItem(null)} />}
-        {feedbackPopup && <FeedbackPopup customerName={feedbackPopup.customerName} onSubmit={handleFeedback} onClose={() => setFeedbackPopup(null)} />}
-      </AnimatePresence>
-
-      {/* ═══════════════════════════════════════════ */}
-      {/* ═══  LEFT COLUMN: Live Stats Sidebar    ═══ */}
-      {/* ═══════════════════════════════════════════ */}
-      <div className="w-[56px] flex flex-col bg-slate-900 border-l border-white/5 items-center py-2 gap-2 flex-shrink-0">
-        <div className="flex flex-col items-center gap-1.5 w-full px-1">
-          <div className="w-full bg-slate-800 rounded-lg p-1.5 text-center" title="طلبات اليوم">
-            <ShoppingBag size={13} className="text-red-500 mx-auto mb-0.5" />
-            <p className="text-[10px] font-black text-white leading-none">{todayOrders.length}</p>
-            <p className="text-[7px] text-slate-600 mt-0.5">{'طلبات'}</p>
+    <div dir="rtl" className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
+      {/* ===== TOP: Orders Navigation Bar ===== */}
+      <div className="bg-slate-800 border-b border-slate-700 px-4 py-2 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => scrollOrders('right')}
+            className="p-2 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          
+          <div 
+            ref={ordersNavRef}
+            className="flex-1 flex gap-2 overflow-x-auto py-1"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {deliveryOrders.map(order => (
+              <motion.button
+                key={order.id}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                onClick={() => setActiveOrderTab(activeOrderTab === order.id ? null : order.id)}
+                className={`flex-shrink-0 flex items-center gap-3 px-4 py-2 rounded-lg border transition-all ${
+                  activeOrderTab === order.id 
+                    ? 'bg-blue-600 border-blue-500' 
+                    : 'bg-slate-700 border-slate-600 hover:bg-slate-600'
+                }`}
+              >
+                <div className={`w-3 h-3 rounded-full ${getOrderTimerColor(order.createdAt)} animate-pulse`} />
+                <span className="font-medium">{order.orderNumber}</span>
+                <span className="text-slate-300 text-sm">{order.customerName}</span>
+                <span className={`px-2 py-0.5 rounded text-xs font-bold ${getOrderTimerColor(order.createdAt)}`}>
+                  {getOrderTimer(order.createdAt)}
+                </span>
+              </motion.button>
+            ))}
+            
+            {deliveryOrders.length === 0 && (
+              <div className="flex items-center gap-2 text-slate-400 px-4">
+                <Package className="w-5 h-5" />
+                <span>لا توجد طلبات توصيل نشطة</span>
+              </div>
+            )}
           </div>
-          <div className="w-full bg-slate-800 rounded-lg p-1.5 text-center" title="متوسط التوصيل">
-            <Timer size={13} className="text-amber-500 mx-auto mb-0.5" />
-            <p className="text-[10px] font-black text-white leading-none">{avgDeliveryTime}</p>
-            <p className="text-[7px] text-slate-600 mt-0.5">{'دقيقة'}</p>
-          </div>
-          <div className="w-full bg-slate-800 rounded-lg p-1.5 text-center" title="شكاوي مفتوحة">
-            <AlertTriangle size={13} className={`mx-auto mb-0.5 ${openComplaints > 0 ? 'text-red-500' : 'text-emerald-500'}`} />
-            <p className={`text-[10px] font-black leading-none ${openComplaints > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{openComplaints}</p>
-            <p className="text-[7px] text-slate-600 mt-0.5">{'شكاوي'}</p>
-          </div>
-          <div className="w-full bg-slate-800 rounded-lg p-1.5 text-center" title="سائقين نشطين">
-            <Bike size={13} className="text-sky-500 mx-auto mb-0.5" />
-            <p className="text-[10px] font-black text-white leading-none">{deliveryEmployees.filter(d => d.status === 'ACTIVE').length}</p>
-            <p className="text-[7px] text-slate-600 mt-0.5">{'سائقين'}</p>
-          </div>
-        </div>
-
-        {/* Active Orders Quick View */}
-        <div className="flex-1 w-full overflow-hidden flex flex-col">
-          <div className="px-1 mt-1">
-            <div className="h-px bg-white/5" />
-          </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-1 mt-1 space-y-1">
-            {todayOrders.filter(o => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELED).slice(0, 6).map(order => {
-              const elapsed = Math.round((Date.now() - order.createdAt.getTime()) / 60000);
-              const isLate = elapsed > 45;
-              return (
-                <div key={order.id} className={`w-full rounded-lg p-1.5 text-center border ${isLate ? 'bg-red-600/15 border-red-600/30' : 'bg-slate-800/50 border-white/[0.03]'}`}>
-                  <p className="text-[8px] font-black text-white leading-none">{order.orderNumber?.split('-')[1]}</p>
-                  <p className={`text-[7px] font-mono mt-0.5 ${isLate ? 'text-red-400' : 'text-slate-600'}`}>{elapsed}{'د'}</p>
-                </div>
-              );
-            })}
+          
+          <button 
+            onClick={() => scrollOrders('left')}
+            className="p-2 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          
+          <div className="flex items-center gap-2 px-4 border-r border-slate-600">
+            <Clock className="w-5 h-5 text-slate-400" />
+            <span className="text-lg font-bold">{deliveryOrders.length}</span>
+            <span className="text-slate-400">طلبات نشطة</span>
           </div>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* ═══  CENTER: Action Zone               ═══ */}
-      {/* ═══════════════════════════════════════════ */}
-      <div className="flex-1 flex flex-col min-w-0 border-l border-white/5">
+      {/* ===== MAIN CONTENT ===== */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
         
-        {/* Top Bar: Phone Search + Customer Badge */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-4 py-2 bg-slate-900/80 border-b border-white/5">
-          <div className="relative w-56">
-            <Phone size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600" />
-            <input value={phoneInput} onChange={e => setPhoneInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handlePhoneSearch()} placeholder="رقم الهاتف..."
-              className="w-full pr-8 pl-3 py-2 bg-slate-800 border border-white/5 rounded-lg text-white text-xs font-bold focus:outline-none focus:border-red-600 transition-all" />
+        {/* ===== RIGHT PANEL: Customer Info (Sticky) ===== */}
+        <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col overflow-hidden flex-shrink-0">
+          {/* Phone Search */}
+          <div className="p-4 border-b border-slate-700">
+            <div className="relative">
+              <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="tel"
+                value={phoneSearch}
+                onChange={(e) => handlePhoneSearch(e.target.value)}
+                placeholder="ادخل رقم الجوال..."
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 pr-11 pl-4 text-lg focus:outline-none focus:border-blue-500 transition-colors"
+                dir="ltr"
+              />
+            </div>
           </div>
-          <button onClick={handlePhoneSearch} className="px-3 py-2 bg-red-600 text-white rounded-lg font-black text-xs hover:bg-red-700 transition-all">{'بحث'}</button>
 
-          <div className="h-6 w-px bg-white/5" />
+          {/* Customer Info or New Customer Form */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <AnimatePresence mode="wait">
+              {selectedCustomer ? (
+                <motion.div
+                  key="customer-info"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-4"
+                >
+                  {/* Customer Header */}
+                  <div className="bg-slate-700/50 rounded-xl p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                          <User className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{selectedCustomer.name}</h3>
+                          <p className="text-slate-400 text-sm" dir="ltr">{selectedCustomer.phone}</p>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getLoyaltyBadge(selectedCustomer.loyaltyLevel).color}`}>
+                        {getLoyaltyBadge(selectedCustomer.loyaltyLevel).text}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-start gap-2 text-slate-300">
+                      <MapPin className="w-4 h-4 mt-1 flex-shrink-0" />
+                      <p className="text-sm">{selectedCustomer.address}</p>
+                    </div>
+                  </div>
 
-          {foundCustomer && (
-            <div className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5 border border-white/5">
-              <span className="text-xs font-black text-white">{foundCustomer.name}</span>
-              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${foundCustomer.loyaltyLevel === 'PLATINUM' ? 'bg-purple-600/20 text-purple-400' : foundCustomer.loyaltyLevel === 'GOLD' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-600/20 text-slate-400'}`}>
-                {foundCustomer.loyaltyLevel}
-              </span>
-              {foundCustomer.hasOpenComplaint && (
-                <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1 }}>
-                  <AlertCircle size={14} className="text-red-500" />
+                  {/* Customer Stats */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-blue-400">{selectedCustomer.totalOrders}</p>
+                      <p className="text-xs text-slate-400">إجمالي الطلبات</p>
+                    </div>
+                    <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-emerald-400">{selectedCustomer.totalSpending}</p>
+                      <p className="text-xs text-slate-400">إجمالي الإنفاق</p>
+                    </div>
+                    <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                        <span className="text-xl font-bold">{selectedCustomer.satisfactionScore}</span>
+                      </div>
+                      <p className="text-xs text-slate-400">التقييم</p>
+                    </div>
+                    <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-purple-400">{selectedCustomer.orderFrequency}</p>
+                      <p className="text-xs text-slate-400">طلبات/شهر</p>
+                    </div>
+                  </div>
+
+                  {/* Favorite Item Quick Add */}
+                  {customerFavoriteItem && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleAddItem(customerFavoriteItem)}
+                      className="w-full bg-gradient-to-r from-amber-600 to-orange-600 rounded-xl p-4 flex items-center gap-3 hover:from-amber-500 hover:to-orange-500 transition-all"
+                    >
+                      <Heart className="w-6 h-6 fill-white" />
+                      <div className="flex-1 text-right">
+                        <p className="text-xs text-amber-200">المفضل لدى العميل</p>
+                        <p className="font-bold">{customerFavoriteItem.nameAr}</p>
+                      </div>
+                      <span className="text-lg font-bold">{customerFavoriteItem.price} ر.س</span>
+                    </motion.button>
+                  )}
+
+                  {/* Open Complaint Warning */}
+                  {customerComplaint && (
+                    <motion.div
+                      initial={{ scale: 0.95 }}
+                      animate={{ scale: 1 }}
+                      className="bg-red-900/50 border border-red-700 rounded-xl p-4"
+                    >
+                      <div className="flex items-center gap-2 text-red-400 mb-2">
+                        <AlertTriangle className="w-5 h-5" />
+                        <span className="font-bold">شكوى مفتوحة!</span>
+                      </div>
+                      <p className="text-sm text-red-300 mb-2">{customerComplaint.description}</p>
+                      <p className="text-xs text-red-400">الحل المقترح: {customerComplaint.proposedSolution}</p>
+                    </motion.div>
+                  )}
+
+                  {/* Complaint Button */}
+                  <button
+                    onClick={() => setShowComplaintBox(true)}
+                    className="w-full bg-slate-700 hover:bg-slate-600 rounded-lg py-3 flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                    <span>تسجيل شكوى جديدة</span>
+                  </button>
+                </motion.div>
+              ) : showNewCustomerForm ? (
+                <motion.div
+                  key="new-customer"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-center gap-2 text-amber-400 mb-4">
+                    <UserPlus className="w-6 h-6" />
+                    <span className="font-bold text-lg">عميل جديد</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={newCustomer.name}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="اسم العميل"
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500"
+                    />
+                    <input
+                      type="tel"
+                      value={newCustomer.phone}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="رقم الجوال"
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500"
+                      dir="ltr"
+                    />
+                    <select
+                      value={newCustomer.area}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, area: e.target.value }))}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">اختر المنطقة...</option>
+                      {DELIVERY_ZONES.map(zone => (
+                        <option key={zone.id} value={zone.name}>{zone.name}</option>
+                      ))}
+                    </select>
+                    <textarea
+                      value={newCustomer.address}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="العنوان بالتفصيل"
+                      rows={3}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 resize-none"
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={handleAddNewCustomer}
+                    disabled={!newCustomer.name || !newCustomer.phone || !newCustomer.address}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg py-3 font-bold transition-colors"
+                  >
+                    إضافة العميل
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center h-full text-slate-500"
+                >
+                  <Phone className="w-16 h-16 mb-4" />
+                  <p className="text-lg">ادخل رقم الجوال للبحث</p>
+                  <p className="text-sm">أو إضافة عميل جديد</p>
                 </motion.div>
               )}
-            </div>
-          )}
-
-          <div className="flex-1" />
-
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-500 font-bold">{currentCart.length} {'صنف'}</span>
-            <span className="text-white font-black">{grandTotal.toFixed(1)} {'شيكل'}</span>
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* Active Orders Visual Tracking Cards */}
-        {todayOrders.filter(o => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELED).length > 0 && (
-          <div className="flex-shrink-0 px-3 py-2 border-b border-white/5 bg-slate-900/30">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Clock size={12} className="text-red-500" />
-              <span className="text-[10px] font-black text-slate-400">{'الطلبات النشطة'}</span>
-              <span className="text-[10px] text-slate-600">({todayOrders.filter(o => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELED).length})</span>
-            </div>
-            <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
-              {todayOrders.filter(o => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELED).map(order => {
-                const elapsed = Math.round((Date.now() - order.createdAt.getTime()) / 60000);
-                return <div key={order.id} className="flex-shrink-0 w-48"><ActiveOrderCard order={order} elapsed={elapsed} /></div>;
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Main Content: Menu + Cart */}
-        <div className="flex-1 flex overflow-hidden">
-          
-          {/* Menu Section */}
-          <div className="flex-1 flex flex-col min-w-0">
-            {/* Categories */}
-            <div className="flex-shrink-0 px-3 pt-2 pb-1">
-              <div className="flex gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+        {/* ===== CENTER: Menu Grid ===== */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Categories + Product ID Input */}
+          <div className="bg-slate-800/50 border-b border-slate-700 p-3 flex-shrink-0">
+            <div className="flex items-center gap-3 mb-3">
+              {/* Quick Product ID Input */}
+              <div className="flex items-center gap-2 bg-slate-700 rounded-lg px-3 py-2 flex-shrink-0">
+                <Hash className="w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={productIdInput}
+                  onChange={(e) => setProductIdInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleProductIdSubmit()}
+                  placeholder="رقم المنتج"
+                  className="bg-transparent w-24 focus:outline-none"
+                  dir="ltr"
+                />
+                <button
+                  onClick={handleProductIdSubmit}
+                  className="bg-blue-600 hover:bg-blue-500 rounded px-2 py-1 text-sm transition-colors"
+                >
+                  إضافة
+                </button>
+              </div>
+              
+              {/* Categories Scroll */}
+              <div className="flex-1 flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                 {CATEGORIES.map(cat => (
-                  <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
-                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-black transition-all ${selectedCategory === cat.id ? 'bg-red-600 text-white' : 'bg-slate-800/60 text-slate-500 hover:bg-slate-800 hover:text-slate-300'}`}>
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all ${
+                      selectedCategory === cat.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    <span className="ml-2">{cat.icon}</span>
                     {cat.name}
                   </button>
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* Search */}
-            <div className="flex-shrink-0 px-3 pb-2">
-              <div className="relative">
-                <Search size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600" />
-                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="بحث بالاسم او رقم المنتج..."
-                  className="w-full pr-8 pl-3 py-2 bg-slate-800/60 border border-white/5 rounded-lg text-white text-xs font-bold focus:outline-none focus:ring-1 focus:ring-red-600/30" />
-              </div>
-            </div>
-
-            {/* Products Grid */}
-            <div className="flex-1 overflow-auto px-3 pb-3 custom-scrollbar">
-              <div className="grid grid-cols-4 gap-1.5">
-                {filteredItems.map(item => (
-                  <button key={item.id} onClick={() => handleAddItem(item)}
-                    className="group bg-slate-900/80 rounded-lg p-2 border border-white/[0.03] hover:border-red-600/30 transition-all text-right">
-                    <div className="flex items-start justify-between mb-0.5">
-                      <span className="text-[9px] font-mono text-slate-600">{item.id}</span>
-                      {SWEETS_CATEGORIES.includes(item.category) && <Scale size={10} className="text-amber-500/70" />}
+          {/* Menu Grid */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+              {filteredMenu.map(item => (
+                <motion.button
+                  key={item.id}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleAddItem(item)}
+                  className="bg-slate-800 hover:bg-slate-700 rounded-xl overflow-hidden transition-colors text-right group"
+                >
+                  <div className="aspect-square bg-slate-700 overflow-hidden relative">
+                    <img 
+                      src={item.image} 
+                      alt={item.nameAr}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+                    <div className="absolute top-2 left-2 bg-slate-900/80 rounded px-2 py-1 text-xs font-mono">
+                      #{item.id}
                     </div>
-                    <p className="text-[11px] font-black text-slate-300 leading-tight mb-1 line-clamp-2 group-hover:text-white transition-colors">{item.nameAr}</p>
-                    <p className="text-xs font-black text-red-500">{item.price} <span className="text-[9px] text-slate-600">{SWEETS_CATEGORIES.includes(item.category) ? '/كغ' : ''}</span></p>
-                  </button>
-                ))}
-              </div>
+                    {SWEETS_CATEGORIES.includes(item.category) && (
+                      <div className="absolute top-2 right-2 bg-amber-600 rounded px-2 py-1 text-xs flex items-center gap-1">
+                        <Scale className="w-3 h-3" />
+                        <span>وزن</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="font-medium text-sm truncate">{item.nameAr}</p>
+                    <p className="text-blue-400 font-bold">{item.price} ر.س{SWEETS_CATEGORIES.includes(item.category) ? '/كغ' : ''}</p>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ===== LEFT PANEL: Invoice (Sticky) ===== */}
+        <div className="w-96 bg-slate-800 border-r border-slate-700 flex flex-col overflow-hidden flex-shrink-0">
+          {/* Invoice Header */}
+          <div className="p-4 border-b border-slate-700 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <FileText className="w-6 h-6" />
+                الفاتورة
+              </h2>
+              {currentCart.length > 0 && (
+                <button
+                  onClick={clearCart}
+                  className="text-red-400 hover:text-red-300 transition-colors"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Cart / Invoice Panel */}
-          <div className="w-[280px] flex flex-col bg-slate-900/40 border-r border-white/5 flex-shrink-0">
-            {/* Smart Cart Suggestions */}
-            {foundCustomer && currentCart.length === 0 && (
-              <div className="flex-shrink-0 p-2 border-b border-white/[0.03]">
-                <SmartCartSuggestions customer={foundCustomer} onAddItem={handleAddItem} />
+          {/* Cart Items */}
+          <div className="flex-1 overflow-y-auto p-4 min-h-0">
+            {currentCart.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                <Package className="w-16 h-16 mb-4" />
+                <p>السلة فارغة</p>
               </div>
-            )}
-
-            {/* Cart Items */}
-            <div className="flex-1 overflow-auto p-2.5 space-y-1.5 custom-scrollbar">
-              {currentCart.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-700">
-                  <Receipt size={32} className="mb-2 opacity-30" />
-                  <p className="font-bold text-xs">{'الفاتورة فارغة'}</p>
-                </div>
-              ) : currentCart.map(item => (
-                <div key={item.uniqueId} className="flex items-center gap-1.5 bg-slate-800/40 rounded-lg p-2 border border-white/[0.03]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-black text-white truncate">{item.name}</p>
-                    {item.note && <p className="text-[9px] text-amber-400/80 font-bold">{item.note}</p>}
-                  </div>
-                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <button onClick={() => updateCartQuantity(item.uniqueId, -1)} className="w-5 h-5 bg-slate-700 rounded flex items-center justify-center text-white hover:bg-slate-600"><Minus size={10} /></button>
-                    <span className="text-[10px] font-black text-white w-5 text-center">{item.quantity}</span>
-                    <button onClick={() => updateCartQuantity(item.uniqueId, 1)} className="w-5 h-5 bg-slate-700 rounded flex items-center justify-center text-white hover:bg-slate-600"><Plus size={10} /></button>
-                  </div>
-                  <p className="text-[11px] font-black text-red-500 w-11 text-left flex-shrink-0">{(item.price * item.quantity).toFixed(0)}</p>
-                  <button onClick={() => removeFromCart(item.uniqueId)} className="text-slate-700 hover:text-red-500"><Trash2 size={12} /></button>
-                </div>
-              ))}
-            </div>
-
-            {/* Cart Controls */}
-            <div className="flex-shrink-0 border-t border-white/5">
-              {/* Delivery Zone + Express */}
-              <div className="px-2.5 py-2 flex items-center gap-1.5">
-                <select value={selectedZone.id} onChange={e => { const z = DELIVERY_ZONES.find(z => z.id === e.target.value); if (z) setSelectedZone(z); }}
-                  className="flex-1 bg-slate-800 border border-white/5 rounded px-2 py-1.5 text-[10px] text-white font-bold focus:outline-none">
-                  {DELIVERY_ZONES.map(z => <option key={z.id} value={z.id}>{z.name} - {z.price}{'\u20AA'}</option>)}
-                </select>
-                <button onClick={() => setIsExpress(!isExpress)}
-                  className={`px-2.5 py-1.5 rounded text-[10px] font-black transition-all flex items-center gap-1 ${isExpress ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-500 border border-white/5'}`}>
-                  <Zap size={11} /> {'عاجل'}
-                </button>
-              </div>
-
-              {/* Discount */}
-              <div className="px-2.5 py-1.5 flex items-center gap-1.5 border-t border-white/[0.03]">
-                <input type="number" value={discountAmount || ''} onChange={e => { setDiscountAmount(Number(e.target.value)); setManualTotal(null); }} placeholder="خصم"
-                  className="flex-1 bg-slate-800 border border-white/5 rounded px-2 py-1.5 text-[10px] text-white font-bold focus:outline-none" />
-                <div className="flex bg-slate-800 rounded border border-white/5 overflow-hidden">
-                  <button onClick={() => setDiscountType('fixed')} className={`px-2 py-1.5 text-[10px] font-black ${discountType === 'fixed' ? 'bg-red-600 text-white' : 'text-slate-500'}`}>{'\u20AA'}</button>
-                  <button onClick={() => setDiscountType('percent')} className={`px-2 py-1.5 text-[10px] font-black ${discountType === 'percent' ? 'bg-red-600 text-white' : 'text-slate-500'}`}>{'%'}</button>
-                </div>
-              </div>
-
-              {/* Manual Total Override */}
-              <div className="px-2.5 py-1.5 flex items-center gap-1.5 border-t border-white/[0.03]">
-                <input type="number" value={manualTotal !== null ? manualTotal : ''} 
-                  onChange={e => setManualTotal(e.target.value ? Number(e.target.value) : null)} 
-                  placeholder="تعديل الاجمالي يدويا"
-                  className="flex-1 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1.5 text-[10px] text-amber-400 font-bold focus:outline-none placeholder:text-amber-500/30" />
-                {manualTotal !== null && (
-                  <button onClick={() => setManualTotal(null)} className="text-slate-600 hover:text-red-500"><X size={12} /></button>
-                )}
-              </div>
-
-              {/* Payment */}
-              <div className="px-2.5 py-1.5 flex gap-1 border-t border-white/[0.03]">
-                {[{ m: PaymentMethod.CASH, l: 'كاش' }, { m: PaymentMethod.CREDIT_CARD, l: 'بطاقة' }, { m: PaymentMethod.ONLINE, l: 'أونلاين' }].map(pm => (
-                  <button key={pm.m} onClick={() => setPaymentMethod(pm.m)}
-                    className={`flex-1 py-1.5 rounded text-[10px] font-black transition-all ${paymentMethod === pm.m ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-500'}`}>{pm.l}</button>
+            ) : (
+              <div className="space-y-3">
+                {currentCart.map((item, index) => (
+                  <motion.div
+                    key={item.uniqueId}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-slate-700/50 rounded-lg p-3"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="font-medium flex-1">{item.name}</p>
+                      <button
+                        onClick={() => removeFromCart(item.uniqueId)}
+                        className="text-red-400 hover:text-red-300 p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateCartQuantity(item.uniqueId, -1)}
+                          className="w-8 h-8 bg-slate-600 hover:bg-slate-500 rounded-lg flex items-center justify-center transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-8 text-center font-bold">{item.quantity}</span>
+                        <button
+                          onClick={() => updateCartQuantity(item.uniqueId, 1)}
+                          className="w-8 h-8 bg-slate-600 hover:bg-slate-500 rounded-lg flex items-center justify-center transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="font-bold text-blue-400">{item.price * item.quantity} ر.س</p>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
+            )}
+          </div>
 
-              {/* Summary */}
-              <div className="px-2.5 py-2 border-t border-white/10 bg-slate-900/60 space-y-1">
-                <div className="flex justify-between text-[10px]"><span className="text-slate-500">{'المجموع'}</span><span className="text-white font-black">{subtotal.toFixed(1)}</span></div>
-                {discountValue > 0 && manualTotal === null && <div className="flex justify-between text-[10px]"><span className="text-emerald-500">{'الخصم'}</span><span className="text-emerald-400 font-black">-{discountValue.toFixed(1)}</span></div>}
-                <div className="flex justify-between text-[10px]"><span className="text-slate-500">{'التوصيل'}</span><span className={`font-black ${isExpress ? 'text-amber-400' : 'text-white'}`}>{isExpress ? 'مجاني' : deliveryFee}</span></div>
-                {manualTotal !== null && <div className="flex justify-between text-[10px]"><span className="text-amber-500">{'تعديل يدوي'}</span><span className="text-amber-400 font-black">{'فعال'}</span></div>}
-                <div className="h-px bg-white/5" />
-                <div className="flex justify-between items-baseline"><span className="text-white font-black text-xs">{'الاجمالي'}</span><span className="text-red-500 font-black text-base">{grandTotal.toFixed(1)}</span></div>
-              </div>
+          {/* Invoice Footer */}
+          <div className="border-t border-slate-700 p-4 space-y-3 flex-shrink-0">
+            {/* Order Note */}
+            <textarea
+              value={orderNote}
+              onChange={(e) => setOrderNote(e.target.value)}
+              placeholder="ملاحظات على الطلب..."
+              rows={2}
+              className="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-blue-500 resize-none"
+            />
 
-              {/* Note + Submit */}
-              <div className="px-2.5 py-2 border-t border-white/5 space-y-1.5">
-                <input value={orderNote} onChange={e => setOrderNote(e.target.value)} placeholder="ملاحظات..."
-                  className="w-full bg-slate-800 border border-white/5 rounded px-2 py-1.5 text-[10px] text-white font-bold focus:outline-none" />
-                
-                <select value={selectedDriverId} onChange={e => setSelectedDriverId(e.target.value)}
-                  className="w-full bg-slate-800 border border-white/5 rounded px-2 py-1.5 text-[10px] text-white font-bold focus:outline-none">
-                  <option value="">{'اختر سائق التوصيل'}</option>
-                  {deliveryEmployees.filter(d => d.status === 'ACTIVE').map(d => (
-                    <option key={d.id} value={d.id}>{d.name} ({d.averageDeliveryTime}{'د'})</option>
-                  ))}
-                </select>
+            {/* Zone Selection */}
+            <select
+              value={selectedZone.id}
+              onChange={(e) => {
+                const zone = DELIVERY_ZONES.find(z => z.id === e.target.value);
+                if (zone) setSelectedZone(zone);
+              }}
+              className="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:border-blue-500 text-sm"
+            >
+              {DELIVERY_ZONES.map(zone => (
+                <option key={zone.id} value={zone.id}>{zone.name} - {zone.price} ر.س</option>
+              ))}
+            </select>
 
-                <div className="flex gap-1.5">
-                  <button onClick={clearCart} className="px-3 py-2.5 bg-slate-800 text-slate-500 rounded-lg text-[10px] font-black hover:bg-slate-700">{'مسح'}</button>
-                  <button onClick={handleSubmitOrder} disabled={currentCart.length === 0}
-                    className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-black text-xs hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
-                    <Send size={13} /> {'تأكيد الطلب'}
-                  </button>
-                </div>
-              </div>
+            {/* Driver Selection */}
+            <select
+              value={selectedDriver}
+              onChange={(e) => setSelectedDriver(e.target.value)}
+              className="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:border-blue-500 text-sm"
+            >
+              <option value="">اختر السائق...</option>
+              {SAMPLE_DRIVERS.filter(d => d.status === 'ACTIVE').map(driver => (
+                <option key={driver.id} value={driver.id}>
+                  {driver.name} ({driver.currentOrders} طلبات) - {driver.area}
+                </option>
+              ))}
+            </select>
+
+            {/* Payment Method */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPaymentMethod(PaymentMethod.CASH)}
+                className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm ${
+                  paymentMethod === PaymentMethod.CASH
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                <Banknote className="w-4 h-4" />
+                نقداً
+              </button>
+              <button
+                onClick={() => setPaymentMethod(PaymentMethod.CREDIT_CARD)}
+                className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm ${
+                  paymentMethod === PaymentMethod.CREDIT_CARD
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                بطاقة
+              </button>
             </div>
+
+            {/* Totals */}
+            <div className="bg-slate-700/50 rounded-lg p-3 space-y-2">
+              <div className="flex justify-between text-slate-400 text-sm">
+                <span>المجموع الفرعي</span>
+                <span>{cartSubtotal} ر.س</span>
+              </div>
+              <div className="flex justify-between text-slate-400 text-sm">
+                <span>التوصيل ({selectedZone.name})</span>
+                <span>{deliveryFee} ر.س</span>
+              </div>
+              <div className="border-t border-slate-600 pt-2 flex items-center gap-2">
+                <span className="text-slate-300 font-medium">الإجمالي</span>
+                <input
+                  type="number"
+                  value={manualTotal}
+                  onChange={(e) => setManualTotal(e.target.value)}
+                  placeholder={(cartSubtotal + deliveryFee).toString()}
+                  className="flex-1 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-left focus:outline-none focus:border-blue-500 font-bold"
+                  dir="ltr"
+                />
+                <span className="text-slate-300">ر.س</span>
+              </div>
+              {manualTotal && parseFloat(manualTotal) !== (cartSubtotal + deliveryFee) && (
+                <div className="flex justify-between text-amber-400 text-sm">
+                  <span>الخصم</span>
+                  <span>{(cartSubtotal + deliveryFee) - parseFloat(manualTotal)} ر.س</span>
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSubmitOrder}
+              disabled={!selectedCustomer || currentCart.length === 0}
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed rounded-xl py-4 font-bold text-lg flex items-center justify-center gap-2 transition-all"
+            >
+              <Send className="w-6 h-6" />
+              تأكيد الطلب ({finalTotal.toFixed(0)} ر.س)
+            </motion.button>
           </div>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* ═══  RIGHT: Customer Context            ═══ */}
-      {/* ═══════════════════════════════════════════ */}
-      <div className="w-[280px] flex flex-col bg-slate-900 flex-shrink-0 overflow-hidden">
-        {/* Tabs */}
-        <div className="flex-shrink-0 flex border-b border-white/5">
-          {[
-            { id: 'context' as const, label: 'العميل', icon: User },
-            { id: 'complaints' as const, label: 'الشكاوي', icon: MessageSquare, badge: openComplaints },
-            { id: 'orders' as const, label: 'الطلبات', icon: ShoppingBag },
-          ].map(tab => (
-            <button key={tab.id} onClick={() => setRightTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-[10px] font-black transition-all border-b-2 ${rightTab === tab.id ? 'text-red-500 border-red-600' : 'text-slate-600 border-transparent hover:text-slate-400'}`}>
-              <tab.icon size={12} /> {tab.label}
-              {tab.badge !== undefined && tab.badge > 0 && (
-                <span className="w-3.5 h-3.5 bg-red-600 rounded-full text-[8px] text-white flex items-center justify-center">{tab.badge}</span>
-              )}
-            </button>
-          ))}
-        </div>
+      {/* ===== WEIGHT POPUP ===== */}
+      <AnimatePresence>
+        {weightItem && (
+          <WeightPopup 
+            item={weightItem} 
+            onConfirm={handleWeightConfirm} 
+            onClose={() => setWeightItem(null)} 
+          />
+        )}
+      </AnimatePresence>
 
-        <div className="flex-1 overflow-auto custom-scrollbar">
-          {/* ─── Context Tab ─── */}
-          {rightTab === 'context' && (
-            <div className="p-3 space-y-3">
-              {foundCustomer ? (
-                <>
-                  {foundCustomer.hasOpenComplaint && (
-                    <motion.div animate={{ opacity: [1, 0.5, 1] }} transition={{ repeat: Infinity, duration: 1.2 }}
-                      className="flex items-center gap-2 p-2.5 bg-red-600/15 border border-red-600/30 rounded-lg">
-                      <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
-                      <p className="text-[10px] font-black text-red-400">{'شكوى مفتوحة لهذا العميل!'}</p>
-                    </motion.div>
-                  )}
+      {/* ===== COMPLAINT MODAL ===== */}
+      <AnimatePresence>
+        {showComplaintBox && selectedCustomer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowComplaintBox(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-800 rounded-2xl p-6 w-full max-w-lg"
+              dir="rtl"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <AlertCircle className="w-6 h-6 text-red-400" />
+                  تسجيل شكوى - {selectedCustomer.name}
+                </h3>
+                <button
+                  onClick={() => setShowComplaintBox(false)}
+                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                  <div className="bg-slate-800/40 rounded-xl p-3 border border-white/[0.03]">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="text-sm font-black text-white">{foundCustomer.name}</h3>
-                        <p className="text-[10px] text-slate-500 font-mono">{foundCustomer.phone}</p>
-                      </div>
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${foundCustomer.loyaltyLevel === 'PLATINUM' ? 'bg-purple-600/20 text-purple-400' : foundCustomer.loyaltyLevel === 'GOLD' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700 text-slate-400'}`}>
-                        {foundCustomer.loyaltyLevel}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-2">
-                      <MapPin size={10} className="flex-shrink-0" /><span className="font-bold truncate">{foundCustomer.address}</span>
-                    </div>
-
-                    {/* Key metrics - no financials in quick view */}
-                    <div className="grid grid-cols-3 gap-1.5 mb-2">
-                      <div className="bg-slate-800/60 rounded-lg p-2 text-center">
-                        <p className="text-[8px] text-slate-600">{'الاكثر طلبا'}</p>
-                        <p className="text-[9px] font-black text-amber-400 truncate">{foundCustomer.favoriteItem || '---'}</p>
-                      </div>
-                      <div className="bg-slate-800/60 rounded-lg p-2 text-center">
-                        <p className="text-[8px] text-slate-600">{'عدد الطلبات'}</p>
-                        <p className="text-[10px] font-black text-white">{foundCustomer.totalOrders}</p>
-                      </div>
-                      <div className="bg-slate-800/60 rounded-lg p-2 text-center">
-                        <p className="text-[8px] text-slate-600">{'آخر طلب'}</p>
-                        <p className="text-[9px] font-black text-slate-300">
-                          {foundCustomer.lastOrderDate ? `${Math.round((Date.now() - foundCustomer.lastOrderDate.getTime()) / (24 * 3600000))} يوم` : '---'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button onClick={() => setShowMoreProfile(!showMoreProfile)}
-                      className="w-full flex items-center justify-center gap-1 text-[9px] text-slate-600 hover:text-slate-400 transition-colors py-1">
-                      {showMoreProfile ? <><EyeOff size={10} /> {'اخفاء التفاصيل'}</> : <><Eye size={10} /> {'عرض المزيد'}</>}
-                    </button>
-
-                    <AnimatePresence>
-                      {showMoreProfile && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                          <div className="pt-2 space-y-1.5">
-                            <div className="flex items-center gap-2 bg-slate-800/60 rounded-lg p-2">
-                              <span className="text-[8px] text-slate-600 w-12">{'الرضا'}</span>
-                              <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                                <motion.div initial={{ width: 0 }} animate={{ width: `${(foundCustomer.satisfactionScore / 5) * 100}%` }}
-                                  className={`h-full rounded-full ${foundCustomer.satisfactionScore >= 4 ? 'bg-emerald-500' : foundCustomer.satisfactionScore >= 3 ? 'bg-amber-500' : 'bg-red-500'}`} />
-                              </div>
-                              <span className="text-[10px] font-black text-white">{foundCustomer.satisfactionScore.toFixed(1)}</span>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <div className="bg-slate-800/60 rounded-lg p-2">
-                                <p className="text-[8px] text-slate-600">{'القسم المفضل'}</p>
-                                <p className="text-[10px] font-black text-slate-300">{foundCustomer.favoriteCategory || '---'}</p>
-                              </div>
-                              <div className="bg-slate-800/60 rounded-lg p-2">
-                                <p className="text-[8px] text-slate-600">{'آخر سائق'}</p>
-                                <p className="text-[10px] font-black text-sky-400">{foundCustomer.lastDriverName || '---'}</p>
-                              </div>
-                            </div>
-
-                            {foundCustomer.notes && (
-                              <div className="bg-slate-800/60 rounded-lg p-2">
-                                <p className="text-[8px] text-slate-600 mb-0.5">{'ملاحظات'}</p>
-                                <p className="text-[10px] text-slate-400">{foundCustomer.notes}</p>
-                              </div>
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Live Order Timeline */}
-                  {customerOrders.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-[10px] font-black text-slate-500 flex items-center gap-1"><Clock size={10} /> {'تتبع الطلبات الحية'}</h4>
-                      {customerOrders.slice(0, 3).map(order => (
-                        <div key={order.id} className="bg-slate-800/40 rounded-xl p-3 border border-white/[0.03]">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[10px] font-black text-white">#{order.orderNumber}</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] font-black text-red-500">{order.total.toFixed(0)}{'\u20AA'}</span>
-                              {order.status === OrderStatus.DELIVERED && (
-                                <button onClick={() => setFeedbackPopup({ orderId: order.id, customerName: foundCustomer.name })}
-                                  className="text-[9px] bg-emerald-600/20 text-emerald-400 px-1.5 py-0.5 rounded font-black hover:bg-emerald-600/30">
-                                  {'تقييم'}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <OrderStepper timeline={order.timeline} createdAt={order.createdAt} />
-                          <div className="flex items-center gap-1.5 mt-1.5">
-                            <Timer size={10} className="text-slate-600" />
-                            <span className="text-[9px] text-slate-500 font-mono">{Math.round((Date.now() - order.createdAt.getTime()) / 60000)} {'دقيقة منذ الاستلام'}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : isNewCustomer ? (
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-2 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                    <User size={14} className="text-amber-500" />
-                    <p className="text-[10px] font-black text-amber-400">{'عميل جديد - أدخل البيانات'}</p>
-                  </div>
-                  <input value={newCustName} onChange={e => setNewCustName(e.target.value)} placeholder="اسم العميل"
-                    className="w-full bg-slate-800 border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-red-600" />
-                  <input value={newCustAddress} onChange={e => setNewCustAddress(e.target.value)} placeholder="العنوان الكامل"
-                    className="w-full bg-slate-800 border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-red-600" />
-                  <select value={newCustArea} onChange={e => setNewCustArea(e.target.value)}
-                    className="w-full bg-slate-800 border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white font-bold focus:outline-none">
-                    {DELIVERY_ZONES.map(z => <option key={z.id} value={z.name}>{z.name}</option>)}
-                  </select>
-                  <button onClick={handleCreateCustomer} disabled={!newCustName.trim()}
-                    className="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-black text-xs disabled:opacity-30">{'تسجيل العميل'}</button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center py-12">
-                  <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center mb-3">
-                    <Phone size={20} className="text-slate-700" />
-                  </div>
-                  <p className="text-xs font-bold text-slate-600">{'أدخل رقم هاتف العميل'}</p>
-                  <p className="text-[10px] text-slate-700 mt-1">{'للبحث عن بياناته أو تسجيله'}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ─── Complaints Tab ─── */}
-          {rightTab === 'complaints' && (
-            <div className="p-3 space-y-3">
-              <div className="bg-slate-800/40 rounded-xl p-3 border border-white/[0.03] space-y-2">
-                <h4 className="text-[10px] font-black text-slate-400 flex items-center gap-1.5"><AlertTriangle size={11} className="text-red-500" /> {'شكوى جديدة'}</h4>
-                <select value={complaintType} onChange={e => setComplaintType(e.target.value as any)}
-                  className="w-full bg-slate-800 border border-white/5 rounded px-2.5 py-2 text-[10px] text-white font-bold focus:outline-none">
-                  {COMPLAINT_TYPES.map(ct => <option key={ct.value} value={ct.value}>{ct.label}</option>)}
-                </select>
+              <div className="space-y-4">
                 <div>
-                  <p className="text-[9px] text-slate-600 mb-1">{'مستوى الغضب'}</p>
-                  <div className="flex gap-0.5">
-                    {[1,2,3,4,5].map(l => (
-                      <button key={l} onClick={() => setComplaintAnger(l)}
-                        className={`flex-1 py-1.5 rounded text-[10px] font-black flex items-center justify-center gap-0.5 ${complaintAnger >= l ? (l >= 4 ? 'bg-red-600 text-white' : l >= 3 ? 'bg-amber-500 text-black' : 'bg-emerald-600 text-white') : 'bg-slate-800 text-slate-600'}`}>
-                        <Flame size={9} />{l}
+                  <label className="block text-sm text-slate-400 mb-2">نوع المشكلة</label>
+                  <select
+                    value={complaintForm.issueType}
+                    onChange={(e) => setComplaintForm(prev => ({ ...prev, issueType: e.target.value as CallCenterComplaint['issueType'] }))}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="DELAY">تأخير</option>
+                    <option value="COLD_FOOD">طعام بارد</option>
+                    <option value="WRONG_ITEM">طلب خاطئ</option>
+                    <option value="MISSING_ITEM">صنف ناقص</option>
+                    <option value="QUALITY">جودة الطعام</option>
+                    <option value="DRIVER">مشكلة مع السائق</option>
+                    <option value="OTHER">أخرى</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">مستوى الغضب (1-5)</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map(level => (
+                      <button
+                        key={level}
+                        onClick={() => setComplaintForm(prev => ({ ...prev, angerLevel: level }))}
+                        className={`flex-1 py-3 rounded-lg font-bold transition-colors ${
+                          complaintForm.angerLevel === level
+                            ? level <= 2 ? 'bg-emerald-600' : level <= 3 ? 'bg-amber-600' : 'bg-red-600'
+                            : 'bg-slate-700 hover:bg-slate-600'
+                        }`}
+                      >
+                        {level}
                       </button>
                     ))}
                   </div>
                 </div>
-                <input value={complaintOrderId} onChange={e => setComplaintOrderId(e.target.value)} placeholder="رقم الطلب (اختياري)"
-                  className="w-full bg-slate-800 border border-white/5 rounded px-2.5 py-2 text-[10px] text-white font-bold focus:outline-none" />
-                <textarea value={complaintDesc} onChange={e => setComplaintDesc(e.target.value)} placeholder="وصف المشكلة..." rows={2}
-                  className="w-full bg-slate-800 border border-white/5 rounded px-2.5 py-2 text-[10px] text-white font-bold focus:outline-none resize-none" />
-                <textarea value={complaintSolution} onChange={e => setComplaintSolution(e.target.value)} placeholder="الحل المقترح..." rows={2}
-                  className="w-full bg-slate-800 border border-white/5 rounded px-2.5 py-2 text-[10px] text-white font-bold focus:outline-none resize-none" />
-                <button onClick={handleSubmitComplaint} disabled={!complaintDesc.trim()}
-                  className="w-full py-2.5 bg-red-600 text-white rounded-lg font-black text-[10px] disabled:opacity-30">{'تسجيل الشكوى'}</button>
-              </div>
 
-              {customerComplaints.length > 0 && (
-                <div className="space-y-1.5">
-                  <h4 className="text-[9px] font-black text-slate-500">{'شكاوي العميل'} ({customerComplaints.length})</h4>
-                  {customerComplaints.map(c => (
-                    <div key={c.id} className={`p-2.5 rounded-lg border ${c.status === 'OPEN' ? 'bg-red-600/10 border-red-600/20' : c.status === 'RESOLVED' ? 'bg-emerald-600/10 border-emerald-600/20' : 'bg-slate-800/40 border-white/[0.03]'}`}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[10px] font-black text-white">{COMPLAINT_TYPES.find(ct => ct.value === c.issueType)?.label}</span>
-                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${c.status === 'OPEN' ? 'bg-red-600/20 text-red-400' : 'bg-emerald-600/20 text-emerald-400'}`}>
-                          {c.status === 'OPEN' ? 'مفتوحة' : c.status === 'RESOLVED' ? 'محلولة' : 'قيد المعالجة'}
-                        </span>
-                      </div>
-                      <p className="text-[9px] text-slate-500 mb-1">{c.description}</p>
-                      {c.status === 'OPEN' && (
-                        <button onClick={() => updateCallCenterComplaint(c.id, { status: 'RESOLVED', resolvedAt: new Date() })}
-                          className="text-[9px] font-black text-emerald-400 hover:text-emerald-300">{'تحديد كمحلولة'}</button>
-                      )}
-                    </div>
-                  ))}
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">وصف المشكلة</label>
+                  <textarea
+                    value={complaintForm.description}
+                    onChange={(e) => setComplaintForm(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 resize-none"
+                    placeholder="اكتب تفاصيل الشكوى..."
+                  />
                 </div>
-              )}
 
-              <div className="space-y-1.5">
-                <h4 className="text-[9px] font-black text-slate-500">{'جميع الشكاوي المفتوحة'}</h4>
-                {callCenterComplaints.filter(c => c.status !== 'RESOLVED').map(c => (
-                  <div key={c.id} className="p-2 bg-slate-800/30 rounded-lg border border-white/[0.03]">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[10px] font-black text-white">{c.customerName}</span>
-                      <span className="text-[9px] text-slate-600">{c.customerPhone}</span>
-                    </div>
-                    <p className="text-[9px] text-slate-500">{COMPLAINT_TYPES.find(ct => ct.value === c.issueType)?.label}{': '}{c.description}</p>
-                    <div className="flex items-center gap-0.5 mt-1">{Array.from({length: c.angerLevel}).map((_,i) => <Flame key={i} size={8} className="text-red-500" />)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ─── Orders Tab (Active Orders with Visual Tracking) ─── */}
-          {rightTab === 'orders' && (
-            <div className="p-3 space-y-2">
-              <h4 className="text-[10px] font-black text-slate-500 flex items-center gap-1"><ShoppingBag size={11} /> {'جميع الطلبات النشطة'}</h4>
-              {todayOrders.filter(o => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELED).length === 0 ? (
-                <div className="text-center py-8 text-slate-700">
-                  <ShoppingBag size={24} className="mx-auto mb-2 opacity-30" />
-                  <p className="text-xs font-bold">{'لا توجد طلبات نشطة'}</p>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">الحل المقترح</label>
+                  <textarea
+                    value={complaintForm.proposedSolution}
+                    onChange={(e) => setComplaintForm(prev => ({ ...prev, proposedSolution: e.target.value }))}
+                    rows={2}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 resize-none"
+                    placeholder="مثال: خصم 20% على الطلب القادم..."
+                  />
                 </div>
-              ) : todayOrders.filter(o => o.status !== OrderStatus.DELIVERED && o.status !== OrderStatus.CANCELED).map(order => {
-                const elapsed = Math.round((Date.now() - order.createdAt.getTime()) / 60000);
-                return (
-                  <div key={order.id}>
-                    <ActiveOrderCard order={order} elapsed={elapsed} />
-                    <div className="mt-1 px-1">
-                      <OrderStepper timeline={order.timeline} createdAt={order.createdAt} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+
+                <button
+                  onClick={handleSubmitComplaint}
+                  disabled={!complaintForm.description}
+                  className="w-full bg-red-600 hover:bg-red-500 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg py-3 font-bold transition-colors"
+                >
+                  تسجيل الشكوى
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
+
+export default CallCenterPOS;
